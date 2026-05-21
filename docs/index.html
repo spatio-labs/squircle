@@ -98,7 +98,48 @@
         font-size: 15px;
         padding: 14px 8px;
       }
-      .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+      .control { margin-top: 16px; }
+      .control .row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .control label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--faint);
+      }
+      .control .val { font-family: var(--mono); font-size: 13px; color: var(--text); }
+      .control .hint { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 4px;
+        border-radius: 999px;
+        background: #27272a;
+        outline: none;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+        border: 0;
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border: 0;
+        border-radius: 50%;
+        background: var(--accent);
+        cursor: pointer;
+      }
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
       .chip {
         font-family: var(--mono);
         font-size: 12px;
@@ -264,6 +305,19 @@
             <span class="prompt">class=</span>
             <input id="cls" spellcheck="false" value="rounded-[64px] squircle" />
           </div>
+
+          <div class="control">
+            <div class="row">
+              <label>Smoothing</label>
+              <span class="val" id="smVal">0.60 · corner-smooth-[0.6]</span>
+            </div>
+            <input id="sm" type="range" min="0" max="1" step="0.01" value="0.6" />
+            <div class="row" style="margin-top:6px">
+              <span class="hint">0 = plain arc (round)</span>
+              <span class="hint">0.6 = squircle (iOS) · 1 = max</span>
+            </div>
+          </div>
+
           <div class="chips" id="chips"></div>
         </div>
 
@@ -308,7 +362,24 @@
       const refSvg = document.getElementById("ref");
       const refPath = refSvg.querySelector("path");
       const thumb = document.getElementById("thumb");
+      const sm = document.getElementById("sm");
+      const smVal = document.getElementById("smVal");
       const ZOOM = 3;
+
+      const radiusToken = (cls) => {
+        let rt = null;
+        for (const t of cls.trim().split(/\s+/)) if (/^rounded(-.+)?$/.test(t)) rt = t;
+        return rt;
+      };
+
+      // Dragging the slider rewrites the class to a variable-smoothing squircle,
+      // keeping the radius. (The `squircle` class itself stays a fixed-0.6 alias.)
+      sm.addEventListener("input", () => {
+        const v = parseFloat(sm.value);
+        const rt = radiusToken(input.value) || "rounded-[64px]";
+        input.value = `${rt} corner-smooth-[${v}]`;
+        render();
+      });
 
       const PRESETS = [
         "rounded-[64px] squircle",
@@ -406,6 +477,17 @@
         const shape = parseShapeClass(input.value);
         // No corner-shape class → fall back to a plain round corner (s = 1).
         const renderShape = shape || { model: "se", param: 1 };
+
+        // Keep the slider + label in sync with whatever the class expresses.
+        if (shape && shape.model === "smooth") {
+          sm.value = shape.param;
+          smVal.textContent = `${(+shape.param).toFixed(2)} · ${shape.token}`;
+        } else if (shape) {
+          smVal.textContent = `n/a · ${shape.token}`;
+        } else {
+          smVal.textContent = "0.00 · plain round";
+          sm.value = 0;
+        }
 
         // Main shape — clip-path does the shaping; border-radius is zeroed so it
         // can't also clip and shave the squircle back toward a circular arc.
