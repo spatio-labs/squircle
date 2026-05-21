@@ -140,4 +140,4 @@ Full plugin options and runtime exports (`initCorners`, `squirclePath`,
 
 ## License
 
-[ISC](./LICENSE) © Matthew Park
+[ISC](./LICENSE) © [Matthew Park](https://x.com/mattpark) ([@mattpark](https://x.com/mattpark))
