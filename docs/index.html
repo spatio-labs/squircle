@@ -240,6 +240,8 @@
         height: 100%;
       }
       #bord, #ref { pointer-events: none; overflow: visible; }
+      /* Low-specificity default fill so bg-* utility classes can override it. */
+      :where(#preview) { background: var(--accent); }
       #ref path {
         fill: none;
         stroke: rgba(255, 255, 255, 0.55);
@@ -363,7 +365,10 @@
         <div class="stage">
           <div class="zoomwrap" id="zoomwrap">
             <div id="preview"></div>
-            <svg id="bord"><path id="bordStroke"></path><path id="bordFill"></path></svg>
+            <svg id="bord">
+              <defs><clipPath id="bordClip" clipPathUnits="userSpaceOnUse"><path id="bordClipPath" clip-rule="evenodd"></path></clipPath></defs>
+              <path id="bordStroke" fill="none" clip-path="url(#bordClip)"></path>
+            </svg>
             <svg id="ref"><path></path></svg>
           </div>
           <div class="legend" id="legend"><span class="dash"></span> same border without squircle</div>
@@ -397,7 +402,7 @@
       const bordVal = document.getElementById("bordVal");
       const bordSvg = document.getElementById("bord");
       const bordStroke = document.getElementById("bordStroke");
-      const bordFill = document.getElementById("bordFill");
+      const bordClipPath = document.getElementById("bordClipPath");
       const bordCss = document.getElementById("bordCss");
       const step3 = document.getElementById("step3");
       const markersOn = document.getElementById("markersOn");
@@ -438,10 +443,17 @@
         "zinc-900": "#18181b", "zinc-400": "#a1a1aa",
       };
 
-      // Parse Tailwind border-* classes — so `border-2 border-blue-500` on the
-      // element is picked up automatically, exactly like the runtime does.
+      const hexToRgba = (hex, a) => {
+        const h = hex.replace("#", "");
+        const n = parseInt(h.length === 3 ? h.replace(/(.)/g, "$1$1") : h, 16);
+        return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+      };
+
+      // Parse Tailwind border-* classes deterministically (width, colour, and the
+      // /opacity modifier) so `border-2 border-blue-500/50` just works — no
+      // computed-style reads, so the border always renders.
       function parseBorder(cls) {
-        let w = 0, has = false, color = null;
+        let w = 0, has = false, color = DEFAULT_BORDER;
         for (const t of cls.trim().split(/\s+/)) {
           if (t === "border") { w = 1; has = true; continue; }
           let m;
@@ -449,12 +461,14 @@
           if ((m = t.match(/^border-\[([^\]]+)\]$/))) {
             const v = m[1];
             if (/^[\d.]+(px|rem)?$/.test(v)) { w = v.endsWith("rem") ? parseFloat(v) * 16 : parseFloat(v); has = true; }
-            else color = v;
+            else color = v; // border-[#hex] / border-[rgb(...)]
             continue;
           }
-          if ((m = t.match(/^border-([a-z]+(?:-\d{2,3})?)$/)) && TW_COLORS[m[1]]) color = TW_COLORS[m[1]];
+          if ((m = t.match(/^border-([a-z]+(?:-\d{2,3})?)(?:\/(\d{1,3}))?$/)) && TW_COLORS[m[1]]) {
+            color = m[2] != null ? hexToRgba(TW_COLORS[m[1]], Math.min(100, +m[2]) / 100) : TW_COLORS[m[1]];
+          }
         }
-        return { has: has && w > 0, w, color: color || DEFAULT_BORDER };
+        return { has: has && w > 0, w, color };
       }
 
       // Insert/replace border-* tokens when the border controls are used.
@@ -611,43 +625,26 @@
         if (b.has) bordW.value = Math.round(b.w);
         bordVal.textContent = b.has ? `${Math.round(b.w)}px` : "off";
 
-        // Border shape is set synchronously (deterministic); the colour + fill
-        // are read from real Tailwind below so opacity / arbitrary colours work.
+        // Border wraps the squircle: stroke the same path at 2× width, clipped to
+        // the OUTSIDE of the shape (huge rect XOR path, even-odd) so a crisp outer
+        // border remains. Fully synchronous + deterministic, so it always renders.
         if (b.has && d) {
           bordSvg.style.display = "";
           bordSvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
           bordSvg.setAttribute("preserveAspectRatio", "none");
+          bordClipPath.setAttribute("d", `M-99999 -99999H99999V99999H-99999Z ${d}`);
           bordStroke.setAttribute("d", d);
-          bordStroke.setAttribute("fill", "none");
+          bordStroke.setAttribute("stroke", b.color);
           bordStroke.setAttribute("stroke-width", b.w * 2);
-          bordFill.setAttribute("d", d);
-          bordFill.setAttribute("stroke", "none");
+          preview.style.borderColor = "transparent"; // hide the shaved CSS border
           step3.style.display = "";
+          bordCss.innerHTML = highlight(
+            `/* your border-* — colour + opacity, wrapping the squircle */\nsvg path {\n  fill: none;\n  stroke: ${b.color};\n  stroke-width: ${b.w * 2};\n}`
+          );
         } else {
           bordSvg.style.display = "none";
           step3.style.display = "none";
         }
-
-        // Pull background + border colour from the *computed* Tailwind styles, so
-        // any class works: bg-*, border-blue-500/50, border-[#hex], etc. Runs
-        // after the Play-CDN JIT has applied the classes.
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => {
-            const cs = getComputedStyle(preview);
-            let fill = cs.backgroundColor;
-            if (!fill || fill === "rgba(0, 0, 0, 0)" || fill === "transparent") fill = PREVIEW_FILL;
-            preview.style.background = fill; // the clipped shape shows the fill
-            if (b.has && d) {
-              const col = cs.borderTopColor || b.color;
-              bordStroke.setAttribute("stroke", col);
-              bordFill.setAttribute("fill", fill);
-              preview.style.borderColor = "transparent"; // hide the shaved CSS border
-              bordCss.innerHTML = highlight(
-                `/* your border-* — colour + opacity, wrapping the squircle */\nsvg path {\n  fill: none;\n  stroke: ${col};\n  stroke-width: ${b.w * 2};\n}`
-              );
-            }
-          })
-        );
 
         // Dashed reference: the plain circular (border-radius) corner.
         const refD = r ? superellipsePath(w, h, radii, 1) : "";
