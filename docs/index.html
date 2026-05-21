@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>squircle — interactive playground</title>
+    <meta
+      name="description"
+      content="SwiftUI-accurate squircles in every browser, as a Tailwind plugin. Edit the class, watch the clip-path."
+    />
+    <!-- Real Tailwind, JIT-compiled in the browser so any class you type works. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        --bg: #09090b;
+        --panel: #111113;
+        --border: #232327;
+        --text: #fafafa;
+        --muted: #71717a;
+        --faint: #52525b;
+        --accent: #fafafa;
+        --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+        --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        -webkit-font-smoothing: antialiased;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 24px;
+        border-bottom: 1px solid var(--border);
+      }
+      header .brand {
+        font-family: var(--mono);
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        color: var(--text);
+      }
+      header .brand .v { color: var(--faint); }
+      header nav { display: flex; gap: 18px; }
+      header nav a {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 13px;
+      }
+      header nav a:hover { color: var(--text); }
+
+      main {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        height: calc(100% - 61px);
+      }
+      @media (max-width: 820px) {
+        main { grid-template-columns: 1fr; height: auto; }
+      }
+
+      /* ---- Left: controls + behind the scenes ---- */
+      .left {
+        padding: 28px;
+        border-right: 1px solid var(--border);
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      .field-label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--faint);
+        margin-bottom: 10px;
+      }
+      .editor {
+        display: flex;
+        align-items: center;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 0 14px;
+        transition: border-color 0.15s;
+      }
+      .editor:focus-within { border-color: #3f3f46; }
+      .editor .prompt { color: var(--faint); font-family: var(--mono); font-size: 15px; }
+      #cls {
+        flex: 1;
+        background: transparent;
+        border: 0;
+        outline: 0;
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 15px;
+        padding: 14px 8px;
+      }
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+      .chip {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 5px 11px;
+        cursor: pointer;
+        transition: all 0.12s;
+      }
+      .chip:hover { color: var(--text); border-color: #3f3f46; }
+
+      .steps { display: flex; flex-direction: column; gap: 16px; }
+      .step .head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .step .num {
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--bg);
+        background: var(--muted);
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      pre {
+        margin: 0;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 16px;
+        font-family: var(--mono);
+        font-size: 13px;
+        line-height: 1.6;
+        color: #d4d4d8;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      pre .tok-prop { color: #a5b4fc; }
+      pre .tok-fn { color: #7dd3fc; }
+      pre .tok-cmt { color: var(--faint); }
+
+      /* ---- Right: live preview ---- */
+      .right {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        background:
+          radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.05), transparent 60%);
+        min-height: 420px;
+      }
+      .right .grid {
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 32px 32px;
+        mask-image: radial-gradient(circle at 50% 42%, #000 30%, transparent 75%);
+      }
+      #preview {
+        width: min(340px, 58vmin);
+        height: min(340px, 58vmin);
+        background: var(--accent);
+        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset,
+          0 40px 90px -24px rgba(0, 0, 0, 0.8);
+      }
+      .caption {
+        position: absolute;
+        bottom: 24px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--faint);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="brand">@spatio-labs/squircle <span class="v">v2</span></div>
+      <nav>
+        <a href="https://www.npmjs.com/package/@spatio-labs/squircle" target="_blank" rel="noopener">npm</a>
+        <a href="https://github.com/spatio-labs/squircle" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="left">
+        <div>
+          <div class="field-label">Tailwind class — edit me</div>
+          <div class="editor">
+            <span class="prompt">class=</span>
+            <input id="cls" spellcheck="false" value="rounded-[64px] squircle" />
+          </div>
+          <div class="chips" id="chips"></div>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="head"><span class="num">1</span> The plugin generates this CSS</div>
+            <pre id="css"></pre>
+          </div>
+          <div class="step">
+            <div class="head"><span class="num">2</span> The runtime computes this <code>clip-path</code></div>
+            <pre id="clip"></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="right">
+        <div class="grid"></div>
+        <div id="preview"></div>
+        <div class="caption" id="caption"></div>
+      </section>
+    </main>
+
+    <script type="module">
+      // Dogfood the published package straight from the CDN.
+      import {
+        squirclePath,
+        superellipsePath,
+        parseShape,
+      } from "https://cdn.jsdelivr.net/npm/@spatio-labs/squircle/corners.mjs";
+
+      const input = document.getElementById("cls");
+      const preview = document.getElementById("preview");
+      const cssOut = document.getElementById("css");
+      const clipOut = document.getElementById("clip");
+      const caption = document.getElementById("caption");
+      const chipsEl = document.getElementById("chips");
+
+      const PRESETS = [
+        "rounded-[64px] squircle",
+        "rounded-[64px] corner-smooth-[0.3]",
+        "rounded-[64px] corner-round",
+        "rounded-[64px] corner-scoop",
+        "rounded-[64px] corner-bevel",
+        "rounded-[64px] corner-notch",
+        "rounded-[64px] corner-square",
+        "rounded-[64px] corner-superellipse-3",
+      ];
+      for (const p of PRESETS) {
+        const chip = document.createElement("button");
+        chip.className = "chip";
+        chip.textContent = p.replace("rounded-[64px] ", "");
+        chip.onclick = () => {
+          input.value = p;
+          render();
+        };
+        chipsEl.appendChild(chip);
+      }
+
+      const SMOOTH = { 0: 0, 45: 0.45, ios: 0.6, 60: 0.6, full: 1, 100: 1 };
+
+      // Parse the shape token from a Tailwind class string into a model + param,
+      // mirroring exactly what the plugin emits.
+      function parseShapeClass(cls) {
+        for (const t of cls.trim().split(/\s+/)) {
+          if (t === "squircle" || t === "corner-squircle")
+            return { model: "smooth", param: 0.6, native: "superellipse(2)", varName: "--se-smooth", varVal: 0.6, token: t };
+          let m;
+          if ((m = t.match(/^corner-smooth-(?:\[(-?[\d.]+)\]|([a-z0-9]+))$/))) {
+            const v = m[1] != null ? parseFloat(m[1]) : SMOOTH[m[2]];
+            if (v != null && !Number.isNaN(v))
+              return { model: "smooth", param: v, native: "superellipse(2)", varName: "--se-smooth", varVal: v, token: t };
+          }
+          if ((m = t.match(/^corner-superellipse-(?:\[(-?[\d.]+)\]|(\d+))$/))) {
+            const v = parseFloat(m[1] != null ? m[1] : m[2]);
+            if (!Number.isNaN(v))
+              return { model: "se", param: v, native: `superellipse(${v})`, varName: "--se-shape", varVal: v, token: t };
+          }
+          if (["corner-round", "corner-bevel", "corner-scoop", "corner-notch", "corner-square"].includes(t)) {
+            const kw = t.replace("corner-", "");
+            return { model: "se", param: parseShape(kw), native: kw, varName: "--se-shape", varVal: parseShape(kw), token: t };
+          }
+        }
+        return null;
+      }
+
+      const px = (v) => parseFloat(v) || 0;
+      const esc = (s) => s.replace(/[\[\].]/g, (c) => "\\" + c);
+
+      function highlight(css) {
+        return css
+          .replace(/(corner-shape|--se-smooth|--se-shape|clip-path)(:)/g, '<span class="tok-prop">$1</span>$2')
+          .replace(/(superellipse|path|round|bevel|scoop|notch|square)(\()/g, '<span class="tok-fn">$1</span>$2');
+      }
+
+      function render() {
+        // Apply the real classes; Tailwind (Play CDN) styles the radius live.
+        preview.className = input.value;
+        // Double rAF so Tailwind's JIT injects the border-radius rule first.
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            const cs = getComputedStyle(preview);
+            const radii = {
+              tl: px(cs.borderTopLeftRadius),
+              tr: px(cs.borderTopRightRadius),
+              br: px(cs.borderBottomRightRadius),
+              bl: px(cs.borderBottomLeftRadius),
+            };
+            const w = preview.offsetWidth;
+            const h = preview.offsetHeight;
+            const shape = parseShapeClass(input.value);
+
+            let d = "";
+            if (shape && (radii.tl || radii.tr || radii.br || radii.bl)) {
+              d = shape.model === "smooth"
+                ? squirclePath(w, h, radii, shape.param)
+                : superellipsePath(w, h, radii, shape.param);
+            }
+
+            if (d) {
+              preview.style.clipPath = `path('${d}')`;
+              preview.style.webkitClipPath = `path('${d}')`;
+            } else {
+              preview.style.clipPath = "none";
+              preview.style.webkitClipPath = "none";
+            }
+
+            // ① generated CSS
+            if (shape) {
+              cssOut.innerHTML = highlight(
+                `.${esc(shape.token)} {\n  corner-shape: ${shape.native};\n  ${shape.varName}: ${shape.varVal};\n}`
+              );
+            } else {
+              cssOut.innerHTML = highlight(
+                `/* no corner-shape class —\n   plain border-radius is used */`
+              );
+            }
+
+            // ② computed clip-path
+            clipOut.innerHTML = d
+              ? highlight(`clip-path: path('${d}');`)
+              : highlight(`clip-path: none;`);
+
+            caption.textContent = `${w} × ${h}px · radius ${Math.round(radii.tl)}px`;
+          })
+        );
+      }
+
+      input.addEventListener("input", render);
+      new ResizeObserver(render).observe(preview);
+      render();
+    </script>
+  </body>
+</html>

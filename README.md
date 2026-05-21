@@ -4,6 +4,8 @@
 
 **SwiftUI-accurate squircles in every browser — as a Tailwind plugin.**
 
+[**▸ Live playground**](https://spatio-labs.github.io/squircle/) — edit a class, watch the `clip-path`.
+
 [![npm](https://img.shields.io/npm/v/@spatio-labs/squircle?color=000&labelColor=000)](https://www.npmjs.com/package/@spatio-labs/squircle)
 [![minzip](https://img.shields.io/bundlephobia/minzip/@spatio-labs/squircle?color=000&labelColor=000)](https://bundlephobia.com/package/@spatio-labs/squircle)
 [![types](https://img.shields.io/npm/types/@spatio-labs/squircle?color=000&labelColor=000)](./tailwind.d.ts)
