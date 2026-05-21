@@ -379,12 +379,14 @@
     </main>
 
     <script type="module">
-      // Dogfood the published package straight from the CDN.
+      // We use our own library. This is the package runtime (corners.mjs),
+      // vendored here so the demo's own UI is shaped by it too.
       import {
+        initCorners,
         squirclePath,
         superellipsePath,
         parseShape,
-      } from "https://cdn.jsdelivr.net/npm/@spatio-labs/squircle/corners.mjs";
+      } from "./corners.mjs";
 
       const input = document.getElementById("cls");
       const preview = document.getElementById("preview");
@@ -688,6 +690,12 @@
       input.addEventListener("input", render);
       new ResizeObserver(render).observe(preview);
       render();
+
+      // Eat our own dog food: shape the playground's own UI with the runtime.
+      document
+        .querySelectorAll(".editor, .chip, .step pre, .step .num, header .brand")
+        .forEach((el) => el.setAttribute("data-corner-shape", "squircle"));
+      initCorners({ force: true });
     </script>
   </body>
 </html>
