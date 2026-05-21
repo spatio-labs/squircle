@@ -221,19 +221,23 @@
         overflow: hidden;
         border: 1px solid var(--border);
         border-radius: 14px;
-        --zoom: 3;
-        --m: 40px; /* room for the border to wrap outside the shape */
       }
-      /* preview (fill), bord (border) and ref (dashed) share one zoom transform
-         with a margin, so the border can wrap outside the squircle. */
-      #preview, #bord, #ref {
+      /* One wrapper holds the fill, border and reference; transforming it zooms
+         all three together (and keeps the wrapping border aligned). */
+      .zoomwrap {
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         transform-origin: top left;
-        transform: translate(var(--m), var(--m)) scale(var(--zoom));
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), filter 0.35s ease;
+      }
+      #preview, #bord, #ref {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
       }
       #bord, #ref { pointer-events: none; overflow: visible; }
       #ref path {
@@ -331,6 +335,10 @@
             </div>
           </div>
 
+          <div class="control" style="margin-top: 4px">
+            <label><input type="checkbox" id="markersOn" checked /> Markers <span style="text-transform:none;letter-spacing:0">(reference, thumbnail, grid — off for a clean view)</span></label>
+          </div>
+
           <div class="chips" id="chips"></div>
         </div>
 
@@ -351,14 +359,16 @@
       </section>
 
       <section class="right">
-        <div class="grid"></div>
+        <div class="grid" id="grid"></div>
         <div class="stage">
-          <div id="preview"></div>
-          <svg id="bord"><path id="bordStroke"></path><path id="bordFill"></path></svg>
-          <svg id="ref"><path></path></svg>
-          <div class="legend"><span class="dash"></span> same border without squircle</div>
+          <div class="zoomwrap" id="zoomwrap">
+            <div id="preview"></div>
+            <svg id="bord"><path id="bordStroke"></path><path id="bordFill"></path></svg>
+            <svg id="ref"><path></path></svg>
+          </div>
+          <div class="legend" id="legend"><span class="dash"></span> same border without squircle</div>
           <div class="caption" id="caption"></div>
-          <div class="thumb-wrap"><div id="thumb"></div><span>actual size</span></div>
+          <div class="thumb-wrap" id="thumbWrap"><div id="thumb"></div><span>actual size</span></div>
         </div>
       </section>
     </main>
@@ -390,9 +400,34 @@
       const bordFill = document.getElementById("bordFill");
       const bordCss = document.getElementById("bordCss");
       const step3 = document.getElementById("step3");
+      const markersOn = document.getElementById("markersOn");
+      const zoomwrap = document.getElementById("zoomwrap");
+      const legend = document.getElementById("legend");
+      const thumbWrap = document.getElementById("thumbWrap");
+      const grid = document.getElementById("grid");
       const DEFAULT_BORDER = "#3b82f6";
       const PREVIEW_FILL = "#fafafa";
       const ZOOM = 3;
+      const MARGIN = 40; // room for the wrapping border in the corner zoom
+      const FULL_SCALE = 0.62; // padded, centered full-shape view
+
+      // Markers ON: analytical corner zoom + reference/thumbnail/grid.
+      // Markers OFF: clean, centered full-shape view with a soft shadow.
+      function layout() {
+        const on = markersOn.checked;
+        if (on) {
+          zoomwrap.style.transformOrigin = "top left";
+          zoomwrap.style.transform = `translate(${MARGIN}px, ${MARGIN}px) scale(${ZOOM})`;
+          zoomwrap.style.filter = "none";
+        } else {
+          zoomwrap.style.transformOrigin = "center";
+          zoomwrap.style.transform = `scale(${FULL_SCALE})`;
+          zoomwrap.style.filter = "drop-shadow(0 28px 55px rgba(0,0,0,0.55))";
+        }
+        for (const el of [legend, caption, thumbWrap, grid, refSvg]) {
+          if (el) el.style.display = on ? "" : "none";
+        }
+      }
 
       // A few Tailwind border colors so border-blue-500 etc. resolve in the demo.
       const TW_COLORS = {
@@ -539,7 +574,7 @@
         preview.style.background = "";
         preview.style.borderColor = "";
         preview.className = input.value;
-        preview.style.setProperty("--zoom", ZOOM);
+        layout();
 
         const w = preview.offsetWidth;
         const h = preview.offsetHeight;
@@ -644,6 +679,7 @@
         caption.textContent = `zoomed ${ZOOM}× · ${w}×${h}px, radius ${Math.round(r)}px`;
       }
 
+      markersOn.addEventListener("change", layout);
       bordOn.addEventListener("change", () => {
         setBorderInClass(parseInt(bordW.value, 10), bordOn.checked);
         render();
