@@ -389,6 +389,23 @@
         font-size: 12px;
         color: var(--faint);
       }
+      .support { margin-top: 26px; }
+      .support table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+      .support td { padding: 8px 0; border-bottom: 1px solid var(--border); color: var(--text); }
+      .support td:last-child {
+        text-align: right;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .support tr:last-child td { border-bottom: 0; }
+      .support .ok { color: #22c55e; margin-right: 5px; }
+      .support .note {
+        margin-top: 12px;
+        font-size: 11px;
+        line-height: 1.6;
+        color: var(--faint);
+      }
     </style>
   </head>
   <body>
@@ -466,6 +483,23 @@
             <div class="head"><span class="num">3</span> The border strokes that <em>same</em> path</div>
             <pre id="bordCss"></pre>
           </div>
+        </div>
+
+        <div class="support">
+          <div class="field-label">Browser support</div>
+          <table>
+            <tbody>
+              <tr><td>Chrome / Edge</td><td><span class="ok">✓</span>all evergreen</td></tr>
+              <tr><td>Safari</td><td><span class="ok">✓</span>13.1+</td></tr>
+              <tr><td>Firefox</td><td><span class="ok">✓</span>69+</td></tr>
+              <tr><td>Older / no JS</td><td>border-radius fallback</td></tr>
+            </tbody>
+          </table>
+          <p class="note">
+            The runtime needs <code>clip-path</code> + <code>ResizeObserver</code> — supported in
+            every evergreen browser. Native CSS <code>corner-shape</code> (Chromium 139+) is used
+            as a progressive enhancement.
+          </p>
         </div>
       </section>
 

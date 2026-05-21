@@ -127,6 +127,19 @@ onto the straight edges (the [Figma smoothing model](https://www.figma.com/blog/
 iOS ≈ 0.6). `squircle` draws that exact curve, so a single class gives you
 the genuine iOS look everywhere.
 
+## Browser support
+
+The runtime needs `clip-path` + `ResizeObserver`, supported in every evergreen
+browser. Native CSS `corner-shape` (Chromium 139+) is used as a progressive
+enhancement; older browsers fall back to a normal `border-radius`.
+
+| Browser | Supported |
+| --- | --- |
+| Chrome / Edge | ✅ all evergreen |
+| Safari | ✅ 13.1+ |
+| Firefox | ✅ 69+ |
+| Older / no JS | falls back to `border-radius` |
+
 ## API
 
 Full plugin options and runtime exports (`initCorners`, `squirclePath`,
