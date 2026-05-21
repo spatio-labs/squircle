@@ -171,16 +171,76 @@
         background-size: 32px 32px;
         mask-image: radial-gradient(circle at 50% 42%, #000 30%, transparent 75%);
       }
+      /* Zoomed top-left corner: a fixed viewport magnifying the corner so the
+         squircle-vs-arc difference is actually visible. */
+      .stage {
+        position: relative;
+        width: min(440px, 72vmin);
+        height: min(440px, 72vmin);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+      }
       #preview {
-        width: min(340px, 58vmin);
-        height: min(340px, 58vmin);
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
         background: var(--accent);
-        box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset,
-          0 40px 90px -24px rgba(0, 0, 0, 0.8);
+        transform-origin: top left;
+        transform: scale(var(--zoom, 3));
+      }
+      /* Dashed reference of the plain border-radius (circular) corner. */
+      #ref {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        overflow: visible;
+      }
+      #ref path {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.55);
+        stroke-width: 1.5;
+        stroke-dasharray: 5 5;
+        vector-effect: non-scaling-stroke;
+      }
+      .thumb-wrap {
+        position: absolute;
+        bottom: 22px;
+        right: 22px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+      }
+      #thumb {
+        width: 64px;
+        height: 64px;
+        background: var(--accent);
+      }
+      .thumb-wrap span { font-family: var(--mono); font-size: 10px; color: var(--faint); }
+      .legend {
+        position: absolute;
+        top: 22px;
+        left: 22px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .legend .dash {
+        width: 22px;
+        height: 0;
+        border-top: 1.5px dashed rgba(255, 255, 255, 0.55);
       }
       .caption {
         position: absolute;
-        bottom: 24px;
+        bottom: 22px;
+        left: 22px;
         font-family: var(--mono);
         font-size: 12px;
         color: var(--faint);
@@ -221,8 +281,13 @@
 
       <section class="right">
         <div class="grid"></div>
-        <div id="preview"></div>
-        <div class="caption" id="caption"></div>
+        <div class="stage">
+          <div id="preview"></div>
+          <svg id="ref"><path></path></svg>
+          <div class="legend"><span class="dash"></span> plain border-radius</div>
+          <div class="caption" id="caption"></div>
+          <div class="thumb-wrap"><div id="thumb"></div><span>actual size</span></div>
+        </div>
       </section>
     </main>
 
@@ -240,6 +305,10 @@
       const clipOut = document.getElementById("clip");
       const caption = document.getElementById("caption");
       const chipsEl = document.getElementById("chips");
+      const refSvg = document.getElementById("ref");
+      const refPath = refSvg.querySelector("path");
+      const thumb = document.getElementById("thumb");
+      const ZOOM = 3;
 
       const PRESETS = [
         "rounded-[64px] squircle",
@@ -298,57 +367,82 @@
           .replace(/(superellipse|path|round|bevel|scoop|notch|square)(\()/g, '<span class="tok-fn">$1</span>$2');
       }
 
+      const pathFor = (shape, w, h, r) =>
+        shape.model === "smooth"
+          ? squirclePath(w, h, r, shape.param)
+          : superellipsePath(w, h, r, shape.param);
+
+      // Tailwind v3 border-radius scale, in px (rem × 16). Parsed deterministically
+      // so we don't race the Play-CDN JIT for arbitrary values.
+      const RADIUS = { none: 0, sm: 2, md: 6, lg: 8, xl: 12, "2xl": 16, "3xl": 24, full: 9999 };
+      function parseRadius(cls, w, h) {
+        let r = 0;
+        for (const t of cls.trim().split(/\s+/)) {
+          const m = t.match(/^rounded(?:-(.+))?$/);
+          if (!m) continue;
+          const key = m[1];
+          if (key == null) { r = 4; continue; } // bare `rounded`
+          if (key[0] === "[") {
+            const v = key.slice(1, -1);
+            if (v.endsWith("px")) r = parseFloat(v);
+            else if (v.endsWith("rem")) r = parseFloat(v) * 16;
+            else if (v.endsWith("%")) r = (parseFloat(v) / 100) * Math.min(w, h);
+            else r = parseFloat(v) || 0;
+          } else if (key in RADIUS) {
+            r = RADIUS[key];
+          }
+        }
+        return r;
+      }
+
       function render() {
-        // Apply the real classes; Tailwind (Play CDN) styles the radius live.
-        preview.className = input.value;
-        // Double rAF so Tailwind's JIT injects the border-radius rule first.
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => {
-            const cs = getComputedStyle(preview);
-            const radii = {
-              tl: px(cs.borderTopLeftRadius),
-              tr: px(cs.borderTopRightRadius),
-              br: px(cs.borderBottomRightRadius),
-              bl: px(cs.borderBottomLeftRadius),
-            };
-            const w = preview.offsetWidth;
-            const h = preview.offsetHeight;
-            const shape = parseShapeClass(input.value);
+        preview.className = input.value; // real classes (Tailwind styles them too)
+        preview.style.setProperty("--zoom", ZOOM);
 
-            let d = "";
-            if (shape && (radii.tl || radii.tr || radii.br || radii.bl)) {
-              d = shape.model === "smooth"
-                ? squirclePath(w, h, radii, shape.param)
-                : superellipsePath(w, h, radii, shape.param);
-            }
+        const w = preview.offsetWidth;
+        const h = preview.offsetHeight;
+        const r = parseRadius(input.value, w, h);
+        const radii = { tl: r, tr: r, br: r, bl: r };
+        const shape = parseShapeClass(input.value);
+        // No corner-shape class → fall back to a plain round corner (s = 1).
+        const renderShape = shape || { model: "se", param: 1 };
 
-            if (d) {
-              preview.style.clipPath = `path('${d}')`;
-              preview.style.webkitClipPath = `path('${d}')`;
-            } else {
-              preview.style.clipPath = "none";
-              preview.style.webkitClipPath = "none";
-            }
+        // Main shape — clip-path does the shaping; border-radius is zeroed so it
+        // can't also clip and shave the squircle back toward a circular arc.
+        const d = r ? pathFor(renderShape, w, h, radii) : "";
+        preview.style.clipPath = d ? `path('${d}')` : "none";
+        preview.style.webkitClipPath = preview.style.clipPath;
+        preview.style.borderRadius = "0";
 
-            // ① generated CSS
-            if (shape) {
-              cssOut.innerHTML = highlight(
-                `.${esc(shape.token)} {\n  corner-shape: ${shape.native};\n  ${shape.varName}: ${shape.varVal};\n}`
-              );
-            } else {
-              cssOut.innerHTML = highlight(
-                `/* no corner-shape class —\n   plain border-radius is used */`
-              );
-            }
+        // Dashed reference: the plain circular (border-radius) corner.
+        const refD = r ? superellipsePath(w, h, radii, 1) : "";
+        refSvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+        refSvg.setAttribute("width", w * ZOOM);
+        refSvg.setAttribute("height", h * ZOOM);
+        refPath.setAttribute("d", refD);
 
-            // ② computed clip-path
-            clipOut.innerHTML = d
-              ? highlight(`clip-path: path('${d}');`)
-              : highlight(`clip-path: none;`);
+        // Thumbnail: the full shape at actual scale (radius scaled to fit).
+        const tw = thumb.offsetWidth, th = thumb.offsetHeight;
+        const k = tw / w;
+        const tr = { tl: r * k, tr: r * k, br: r * k, bl: r * k };
+        const td = r ? pathFor(renderShape, tw, th, tr) : "";
+        thumb.style.clipPath = td ? `path('${td}')` : "none";
+        thumb.style.webkitClipPath = thumb.style.clipPath;
+        thumb.style.borderRadius = "0";
 
-            caption.textContent = `${w} × ${h}px · radius ${Math.round(radii.tl)}px`;
-          })
-        );
+        // ① generated CSS
+        cssOut.innerHTML = shape
+          ? highlight(
+              `.${esc(shape.token)} {\n  corner-shape: ${shape.native};\n  ${shape.varName}: ${shape.varVal};\n}`
+            )
+          : highlight(`/* no corner-shape class —\n   plain border-radius (round) */`);
+
+        // ② computed clip-path
+        clipOut.innerHTML = d
+          ? highlight(`clip-path: path('${d}');`)
+          : highlight(`clip-path: none;`);
+
+        caption.textContent = `zoomed ${ZOOM}× · ${w}×${h}px, radius ${Math.round(r)}px`;
       }
 
       input.addEventListener("input", render);
