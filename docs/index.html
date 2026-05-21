@@ -51,6 +51,21 @@
         font-size: 13px;
       }
       header nav a:hover { color: var(--text); }
+      .copybtn {
+        font-family: var(--sans);
+        font-size: 13px;
+        font-weight: 500;
+        color: #09090b;
+        background: #fafafa;
+        border: 0;
+        border-radius: 9px;
+        padding: 7px 14px;
+        cursor: pointer;
+        transition: opacity 0.15s, transform 0.1s;
+      }
+      .copybtn:hover { opacity: 0.85; }
+      .copybtn:active { transform: scale(0.97); }
+      .copybtn.copied { background: #22c55e; color: #052e16; }
 
       main {
         display: grid;
@@ -302,6 +317,7 @@
         <a href="https://www.npmjs.com/package/@spatio-labs/squircle" target="_blank" rel="noopener">npm</a>
         <a href="https://github.com/spatio-labs/squircle" target="_blank" rel="noopener">GitHub</a>
         <a href="https://x.com/mattpark" target="_blank" rel="noopener">by @mattpark</a>
+        <button id="copyPrompt" class="copybtn" title="Copy a prompt for Claude Code / Cursor to add squircle to your project">Copy setup prompt</button>
       </nav>
     </header>
 
@@ -692,9 +708,49 @@
       new ResizeObserver(render).observe(preview);
       render();
 
+      // One-click: copy a ready-to-paste prompt for Claude Code / Cursor.
+      const SETUP_PROMPT = `Add SwiftUI-accurate squircle corners to my Tailwind project using @spatio-labs/squircle.
+
+1. Install: npm i @spatio-labs/squircle
+2. Register the plugin in tailwind.config:
+     const squircle = require("@spatio-labs/squircle");
+     module.exports = { plugins: [squircle] };
+3. Call the runtime once on the client (e.g. root layout / app entry):
+     import { initCorners } from "@spatio-labs/squircle/corners";
+     initCorners();
+4. Use the \`squircle\` class alongside any rounded-* radius, e.g.
+     <div class="rounded-2xl squircle">…</div>
+   - custom smoothing: squircle-[0.4]
+   - other shapes: corner-round / corner-bevel / corner-scoop / corner-notch / corner-square / corner-superellipse-[n]
+   - borders follow the curve automatically: <div class="rounded-2xl squircle border-2 border-blue-500/50">
+
+It renders the real SwiftUI .continuous corner (not CSS superellipse(2)) and works in every browser.
+Docs: https://github.com/spatio-labs/squircle`;
+
+      const copyBtn = document.getElementById("copyPrompt");
+      copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(SETUP_PROMPT);
+        } catch {
+          const ta = document.createElement("textarea");
+          ta.value = SETUP_PROMPT;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+        }
+        const prev = copyBtn.textContent;
+        copyBtn.textContent = "Copied ✓";
+        copyBtn.classList.add("copied");
+        setTimeout(() => {
+          copyBtn.textContent = prev;
+          copyBtn.classList.remove("copied");
+        }, 1600);
+      });
+
       // Eat our own dog food: shape the playground's own UI with the runtime.
       document
-        .querySelectorAll(".editor, .chip, .step pre, .step .num, header .brand")
+        .querySelectorAll(".editor, .chip, .step pre, .step .num, .copybtn")
         .forEach((el) => el.setAttribute("data-corner-shape", "squircle"));
       initCorners({ force: true });
     </script>
