@@ -1,0 +1,32 @@
+/*
+ * Superellipse (squircle) corner utilities — plain CSS, no build step.
+ *
+ * Built on the native CSS `corner-shape` property (Chromium 139+), which
+ * reshapes the corners produced by `border-radius` into a superellipse. Pair
+ * any element that has a `border-radius` with one of these classes:
+ *
+ *   <div class="my-card squircle" style="border-radius: 20px">…</div>
+ *
+ * `corner-shape: superellipse(k)` maps k to corner curvature:
+ *   0 = bevel, 1 = round, 2 = squircle (Apple-like), higher = squarer.
+ *
+ * To make EVERY rounded element a squircle with no extra class, uncomment:
+ *
+ *   *, ::before, ::after { corner-shape: superellipse(2); }
+ *
+ * (This is safe — `corner-shape` is a no-op on elements without a radius.)
+ */
+
+.corner-round            { corner-shape: round; }
+.corner-bevel            { corner-shape: bevel; }
+.corner-notch            { corner-shape: notch; }
+.corner-scoop            { corner-shape: scoop; }
+.corner-square           { corner-shape: square; }
+
+.corner-squircle,
+.squircle                { corner-shape: superellipse(2); }
+
+.corner-superellipse-1   { corner-shape: superellipse(1); }
+.corner-superellipse-2   { corner-shape: superellipse(2); }
+.corner-superellipse-3   { corner-shape: superellipse(3); }
+.corner-superellipse-4   { corner-shape: superellipse(4); }

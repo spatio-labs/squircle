@@ -1,34 +1,82 @@
-# API Reference for Superellipse
+# API Reference
 
-The `Superellipse` component allows you to apply a superellipse (also known as squircle) mask to any React component, giving it rounded corners with a smooth transition between the sides and the corners, similar to Apple's iOS icons. This guide details the props available for the `Superellipse` component.
+`superellipse` is a Tailwind CSS plugin plus a small browser runtime. There is
+no React component (removed in v2).
 
-## Props
+## Tailwind plugin — `superellipse` (`@spatio-labs/superellipse/tailwind`)
 
-The component accepts the following props:
+```js
+const squircle = require("@spatio-labs/superellipse");
 
-- `children`: The ReactNode(s) that you want to wrap with the superellipse shape. This can be any valid React element or component.
-- `cornerRadius` (number): The radius of the corners. Default is `8`.
-- `cornerSmoothing` (number): The smoothness of the corners. It adjusts how pronounced the superellipse effect is. Default is `1`.
-- `topLeftCornerRadius`, `topRightCornerRadius`, `bottomLeftCornerRadius`, `bottomRightCornerRadius` (number): Specific corner radius values for each corner. This allows for asymmetric shapes.
-- `topCornerRadius`, `leftCornerRadius`, `rightCornerRadius`, `bottomCornerRadius` (number): Specific corner radius values for each side. These provide more control than individual corner radii.
-- `asChild` (boolean): If true, the component uses `Slot` from `@radix-ui/react-slot` instead of a div. This is useful for applying the superellipse effect directly to a child component without adding extra DOM elements.
-- `style` (CSSProperties): Custom CSS styles to apply to the component.
-- `width`, `height` (number): Explicit width and height for the component. If not provided, the component tries to infer these from its content or defaults.
-- `defaultWidth`, `defaultHeight` (number): Fallback width and height if the actual dimensions cannot be determined.
-- `className` (string): Custom className to apply to the component.
-- `as` (ElementType): The component type to render as. Defaults to `"div"`.
-- `onClick`, `onMouseEnter`, `onMouseLeave`, `onMouseDown`, `onDragStart`: Event handlers for corresponding mouse events.
+module.exports = {
+  plugins: [
+    squircle,              // default options
+    // squircle({ smoothing: 0.6, global: false }),
+  ],
+};
+```
 
-## Example Usage
+### Options
 
-```jsx
-import React from 'react';
-import { Superellipse } from 'superellipse';
+| Option      | Type      | Default | Description |
+|-------------|-----------|---------|-------------|
+| `smoothing` | `number`  | `0.6`   | SwiftUI/Figma corner smoothing (`0`–`1`) for `squircle` / `corner-squircle` and global mode. iOS uses `0.6`. |
+| `global`    | `boolean` | `false` | Apply a SwiftUI squircle to **every** element with a `border-radius`, no per-element class needed. |
 
-const MyComponent = () => (
-  <Superellipse cornerRadius={10} cornerSmoothing={0.6} style={{ backgroundColor: 'royalblue' }}>
-    <div style={{ padding: '20px', color: 'white' }}>Hello, Superellipse!</div>
-  </Superellipse>
-);
+### Utilities
 
-export default MyComponent;
+| Class | Effect |
+|-------|--------|
+| `squircle`, `corner-squircle` | SwiftUI continuous corner at the configured smoothing. |
+| `corner-smooth-{0,45,ios,60,full,100}` | SwiftUI corner at preset smoothing; arbitrary `corner-smooth-[0.8]` supported. |
+| `corner-round` | `corner-shape: round` (`superellipse(1)`). |
+| `corner-bevel` | `corner-shape: bevel` (`superellipse(0)`). |
+| `corner-scoop` | `corner-shape: scoop` (`superellipse(-1)`, concave). |
+| `corner-notch` | `corner-shape: notch` (concave right angle). |
+| `corner-square` | `corner-shape: square` (sharp corner). |
+| `corner-superellipse-{0..4}` | Raw CSS superellipse exponent; arbitrary/negative values supported, e.g. `corner-superellipse-[3.5]`, `corner-superellipse-[-1]`. |
+
+Each utility sets the relevant CSS (`corner-shape` and/or a `--se-smooth` /
+`--se-shape` custom property) that the runtime reads. The radius itself comes
+from your normal radius utilities (`rounded-*`, `rounded-[20px]`).
+
+## Runtime — `@spatio-labs/superellipse/corners`
+
+```js
+import { initCorners } from "@spatio-labs/superellipse/corners";
+const cleanup = initCorners();
+```
+
+### `initCorners(options?) => () => void`
+
+Scans a root for corner-shaped elements and keeps each element's `clip-path` in
+sync with size and DOM changes. Returns a cleanup function that disconnects the
+observers.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `root` | `ParentNode` | `document` | Subtree to scan. |
+| `selector` | `string` | `[class*="corner-"],.squircle,[data-corner-shape]` | Candidate elements. |
+| `force` | `boolean` | `false` | Also draw the superellipse family via `clip-path` even where native `corner-shape` is supported. |
+| `watch` | `boolean` | `true` | Observe DOM mutations to shape newly-added elements. |
+
+Without Tailwind, target elements with a `data-corner-shape` attribute that
+accepts `squircle` / `continuous` (SwiftUI) or any
+[`<corner-shape-value>`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/corner-shape-value).
+
+### Path helpers
+
+- `squirclePath(w, h, radii, smoothing)` — SwiftUI continuous-corner outline
+  (Figma smoothing model). `radii` is `{ tl, tr, br, bl }` in px.
+- `superellipsePath(w, h, radii, s, segments?)` — CSS `corner-shape` superellipse
+  outline for parameter `s` (curve exponent `n = 2^s`).
+- `parseShape(value)` — parse a `<corner-shape-value>` string to the parameter `s`.
+- `supportsNative()` — `true` when the browser implements native CSS `corner-shape`.
+
+All helpers return SVG path strings suitable for `clip-path: path('…')`.
+
+## Browser support
+
+`clip-path` and `ResizeObserver` are required and supported in every evergreen
+browser. Native `corner-shape` (Chromium 139+) is used as an enhancement for the
+geometric values; the SwiftUI `squircle` is always rendered by the runtime.

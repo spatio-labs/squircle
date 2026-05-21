@@ -1,68 +1,129 @@
+<div align="center">
 
-# Superellipse
+# superellipse
 
-![Superellipse Banner](./superellipse_example.jpg)
+**SwiftUI-accurate squircles in every browser — as a Tailwind plugin.**
 
-The Superellipse, famously known as the "squircle," represents a delightful blend of a square and a circle's visual attributes. This geometric shape has been emblematic of the seamless user experience on Apple devices since they [patented](http://assets.sbnation.com/assets/1701443/USD670286S1.pdf) it in 2012. The subtlety of a superellipse, though not immediately conspicuous, demands intricate mathematics to perfect. Inspired by Figma's comprehensive [article](https://www.figma.com/blog/desperately-seeking-squircles/) on the subject, we recognized the gap in readily integrating superellipses into web interfaces.
+[![npm](https://img.shields.io/npm/v/@spatio-labs/superellipse?color=000&labelColor=000)](https://www.npmjs.com/package/@spatio-labs/superellipse)
+[![minzip](https://img.shields.io/bundlephobia/minzip/@spatio-labs/superellipse?color=000&labelColor=000)](https://bundlephobia.com/package/@spatio-labs/superellipse)
+[![types](https://img.shields.io/npm/types/@spatio-labs/superellipse?color=000&labelColor=000)](./tailwind.d.ts)
+[![license](https://img.shields.io/npm/l/@spatio-labs/superellipse?color=000&labelColor=000)](./LICENSE)
 
-**Superellipse** is our solution to bringing the refined aesthetic of superellipses to the web, enabling developers to imbue their UIs with the native feel that has been elusive thus far. With just a simple `npm` installation, you can envelop any component in a superellipse, effortlessly elevating the user experience.
+![superellipse — with and without corner smoothing](./superellipse_example.jpg)
 
-## Features
+</div>
 
-- **Easy Integration**: Wrap any React component within a Superellipse for instant native UI feel.
-- **Customizable**: Adjustable corner radius and smoothing to fit your design specifications.
-- **Performance Optimized**: Lightweight implementation ensuring minimal impact on load times.
+The squircle is the corner that makes Apple's UI feel _settled_ — a continuous
+curve that flows into the edge instead of snapping into an arc. `superellipse`
+brings it to the web as Tailwind utilities, rendering the **real SwiftUI corner**
+(not the rougher CSS `superellipse(2)`) in **every evergreen browser**.
 
-## Getting Started
+```html
+<div class="rounded-2xl squircle">Hello, continuous corner.</div>
+```
 
-### Installation
+## Install
 
 ```bash
-npm i superellipse
+npm i @spatio-labs/superellipse
 ```
 
-### Usage
+`tailwindcss` is an optional peer dependency.
 
-Here's a quick example to get you started:
+## Setup
 
-```jsx
-import React from 'react';
-import { Superellipse } from 'superellipse';
+Register the plugin, then call the runtime once on the client.
 
-const App = () => (
-  <Superellipse cornerRadius={8} cornerSmoothing={1}>
-    <YourComponent />
-  </Superellipse>
-);
+```js
+// tailwind.config.js
+const squircle = require("@spatio-labs/superellipse");
 
-export default App;
+module.exports = {
+  plugins: [squircle],
+};
 ```
 
-### Props
+```js
+// app entry
+import { initCorners } from "@spatio-labs/superellipse/corners";
 
-Customize your superellipse by adjusting the following props:
+initCorners();
+```
 
-- `cornerRadius`: Defines the radius of the corners.
-- `cornerSmoothing`: Adjusts the smoothness of the corners.
-- More props documented in our detailed [API Reference](#api-reference).
+That's it. `initCorners()` scans the page, draws each corner with a `clip-path`,
+and keeps it sharp through resizes and DOM changes. `clip-path` + `ResizeObserver`
+ship in every modern browser, so the result is identical in Chrome, Firefox, and
+Safari.
 
-## API Reference
+## Utilities
 
-For a more in-depth look at the available properties and their functionalities, please refer to the [API Reference](docs/api.md).
+```html
+<div class="rounded-2xl squircle">…</div>               <!-- SwiftUI continuous corner -->
+<div class="rounded-2xl corner-smooth-[0.85]">…</div>   <!-- custom smoothing, 0–1 -->
+<div class="rounded-2xl corner-superellipse-3">…</div>  <!-- raw CSS superellipse exponent -->
+<div class="rounded-xl corner-scoop">…</div>            <!-- concave -->
+```
 
-## Examples
+| Utility | Shape |
+| --- | --- |
+| `squircle` · `corner-squircle` | SwiftUI continuous corner (iOS smoothing) |
+| `corner-smooth-{0,45,ios,60,full,100}` · `corner-smooth-[0.85]` | Continuous corner, custom smoothing `0`–`1` |
+| `corner-round` `corner-bevel` `corner-scoop` `corner-notch` `corner-square` | The CSS [`corner-shape`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/corner-shape-value) keywords |
+| `corner-superellipse-{0..4}` · `corner-superellipse-[3.5]` · `corner-superellipse-[-1]` | Raw superellipse exponent |
 
-Discover how `superellipse` can be applied in various scenarios through our [Examples](docs/examples.md) documentation.
+The radius comes from your normal Tailwind radius utilities (`rounded-md`,
+`rounded-[20px]`); the `corner-*` class only changes the corner _shape_.
 
-## Contributing
+### Make everything a squircle
 
-We welcome contributions! If you're interested in improving `superellipse`, check out our [Contributing Guidelines](CONTRIBUTING.md).
+```js
+module.exports = {
+  plugins: [squircle({ global: true })],
+};
+```
+
+```html
+<div class="rounded-md">Every rounded element is now a squircle.</div>
+```
+
+## Without Tailwind
+
+The runtime stands alone, driven by a `data-corner-shape` attribute that accepts
+`squircle` / `continuous` or any `<corner-shape-value>`:
+
+```html
+<div style="border-radius: 24px" data-corner-shape="squircle"></div>
+<div style="border-radius: 24px" data-corner-shape="superellipse(3)"></div>
+```
+
+```js
+import { initCorners } from "@spatio-labs/superellipse/corners";
+initCorners();
+```
+
+A plain-CSS file is included for the native `corner-shape` values (Chromium 139+,
+no runtime): `@import "@spatio-labs/superellipse/squircle.css"`.
+
+## Why not the native CSS property?
+
+Native [`corner-shape`](https://developer.mozilla.org/en-US/docs/Web/CSS/corner-shape)
+is Chromium-only today, and its `squircle` keyword is `superellipse(2)` — close,
+but tighter than Apple's curve. SwiftUI's `.continuous` corner spreads the bend
+onto the straight edges (the [Figma smoothing model](https://www.figma.com/blog/desperately-seeking-squircles/),
+iOS ≈ 0.6). `superellipse` draws that exact curve, so a single class gives you
+the genuine iOS look everywhere.
+
+## API
+
+Full plugin options and runtime exports (`initCorners`, `squirclePath`,
+`superellipsePath`, `parseShape`, `supportsNative`) are in the
+[**API reference**](./api.md).
+
+## Credits
+
+- [Desperately seeking squircles](https://www.figma.com/blog/desperately-seeking-squircles/) — Figma
+- The CSS [`corner-shape`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/corner-shape-value) specification
 
 ## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
-
-## Acknowledgments
-
-- [Figma's Squircle Article](https://www.figma.com/blog/desperately-seeking-squircles/)
-- Apple's Patent on Superellipses
+[ISC](./LICENSE) © Matthew Park

@@ -1,25 +1,74 @@
 {
-  "name": "superellipse",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "@spatio-labs/superellipse",
+  "version": "2.0.0",
+  "description": "Tailwind CSS plugin + tiny runtime for SwiftUI-accurate squircles and the full CSS corner-shape value set, working in every browser.",
+  "main": "./tailwind.js",
+  "types": "./tailwind.d.ts",
+  "exports": {
+    ".": {
+      "types": "./tailwind.d.ts",
+      "require": "./tailwind.js",
+      "default": "./tailwind.js"
+    },
+    "./tailwind": {
+      "types": "./tailwind.d.ts",
+      "require": "./tailwind.js",
+      "default": "./tailwind.js"
+    },
+    "./corners": {
+      "types": "./corners.d.ts",
+      "import": "./corners.mjs",
+      "default": "./corners.mjs"
+    },
+    "./squircle.css": "./squircle.css"
+  },
+  "files": [
+    "tailwind.js",
+    "tailwind.d.ts",
+    "corners.mjs",
+    "corners.d.ts",
+    "squircle.css",
+    "README.md",
+    "superellipse_example.jpg"
+  ],
+  "sideEffects": [
+    "./corners.mjs",
+    "*.css"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "test": "node --test"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "tailwind",
+    "tailwindcss",
+    "tailwind-plugin",
+    "squircle",
+    "superellipse",
+    "corner-shape",
+    "swiftui",
+    "continuous-corner",
+    "border-radius",
+    "css"
+  ],
+  "author": "Matthew Park",
   "license": "ISC",
-  "devDependencies": {
-    "@types/react": "^18.2.70",
-    "@types/react-dom": "^18.2.22",
-    "typescript": "^5.4.3"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spatio-labs/superellipse.git"
   },
-  "dependencies": {
-    "@radix-ui/react-slot": "^1.0.2",
-    "clsx": "^2.1.0",
-    "framer-motion": "^11.0.20",
-    "react-dom": "^18.2.0",
-    "tailwind-merge": "^2.2.2"
+  "homepage": "https://github.com/spatio-labs/superellipse#readme",
+  "bugs": {
+    "url": "https://github.com/spatio-labs/superellipse/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "tailwindcss": ">=3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "tailwindcss": {
+      "optional": true
+    }
   }
 }
