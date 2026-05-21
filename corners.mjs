@@ -200,39 +200,64 @@ function readRadii(el) {
 }
 
 const SVGNS = "http://www.w3.org/2000/svg";
+let SQB_ID = 0;
 
 // A border on a clip-path'd squircle gets shaved at the corners. Instead we
-// stroke the *same* path: an SVG overlay inside the clipped element, so the
-// outer half of the stroke is clipped away and a crisp border hugs the curve.
-// This is the part most squircle implementations miss.
+// stroke the *same* path and clip it to the OUTSIDE of the shape, so a crisp
+// border wraps the squircle. The overlay is a sibling (not a child of the
+// clipped element) so it isn't clipped away. This is the part most squircle
+// implementations miss.
 function ensureBorder(el, cs, w, h, d) {
   const bw = parseFloat(cs.borderTopWidth) || 0;
   const bc = cs.borderTopColor;
   const transparent = !bc || bc === "transparent" || /^rgba?\(0,\s*0,\s*0,\s*0\)$/.test(bc);
-  let ov = el.querySelector(":scope > svg[data-squircle-border]");
 
   if (d && bw > 0 && !transparent) {
-    if (getComputedStyle(el).position === "static") el.style.position = "relative";
-    if (!ov) {
+    const parent = el.parentNode;
+    if (!parent) return;
+    if (getComputedStyle(parent).position === "static") parent.style.position = "relative";
+
+    let ov = el.__sqBorder;
+    if (!ov || ov.parentNode !== parent) {
       ov = document.createElementNS(SVGNS, "svg");
       ov.setAttribute("data-squircle-border", "");
-      ov.setAttribute("preserveAspectRatio", "none");
       ov.setAttribute("aria-hidden", "true");
-      Object.assign(ov.style, {
-        position: "absolute", inset: "0", width: "100%", height: "100%", pointerEvents: "none",
-      });
-      ov.appendChild(document.createElementNS(SVGNS, "path"));
-      el.appendChild(ov);
+      ov.setAttribute("preserveAspectRatio", "none");
+      Object.assign(ov.style, { position: "absolute", pointerEvents: "none", overflow: "visible" });
+      const clipId = `sqb${++SQB_ID}`;
+      const defs = document.createElementNS(SVGNS, "defs");
+      const clip = document.createElementNS(SVGNS, "clipPath");
+      clip.setAttribute("id", clipId);
+      clip.setAttribute("clipPathUnits", "userSpaceOnUse");
+      const clipPath = document.createElementNS(SVGNS, "path");
+      clipPath.setAttribute("clip-rule", "evenodd");
+      clip.appendChild(clipPath);
+      defs.appendChild(clip);
+      const stroke = document.createElementNS(SVGNS, "path");
+      stroke.setAttribute("fill", "none");
+      stroke.setAttribute("clip-path", `url(#${clipId})`);
+      ov.append(defs, stroke);
+      el.__sqBorder = ov;
+      ov.__clip = clipPath;
+      ov.__stroke = stroke;
+      parent.insertBefore(ov, el.nextSibling);
     }
+    // Position the overlay exactly over the element (border box).
+    ov.style.left = `${el.offsetLeft}px`;
+    ov.style.top = `${el.offsetTop}px`;
+    ov.setAttribute("width", w);
+    ov.setAttribute("height", h);
     ov.setAttribute("viewBox", `0 0 ${w} ${h}`);
-    const p = ov.firstChild;
-    p.setAttribute("d", d);
-    p.setAttribute("fill", "none");
-    p.setAttribute("stroke", bc);
-    p.setAttribute("stroke-width", bw * 2); // outer half is clipped → bw shows
-    el.style.borderColor = "transparent"; // hide the real (clipped) border
-  } else if (ov) {
-    ov.remove();
+    // Inverse clip: a huge rect XOR the squircle (even-odd) → the region OUTSIDE
+    // the shape. Stroking at 2× and clipping to outside leaves a bw outer border.
+    ov.__clip.setAttribute("d", `M-99999 -99999H99999V99999H-99999Z ${d}`);
+    ov.__stroke.setAttribute("d", d);
+    ov.__stroke.setAttribute("stroke", bc);
+    ov.__stroke.setAttribute("stroke-width", bw * 2);
+    el.style.borderColor = "transparent"; // hide the real (shaved) border
+  } else if (el.__sqBorder) {
+    el.__sqBorder.remove();
+    el.__sqBorder = null;
   }
 }
 

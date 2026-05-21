@@ -222,29 +222,21 @@
         border: 1px solid var(--border);
         border-radius: 14px;
         --zoom: 3;
+        --m: 40px; /* room for the border to wrap outside the shape */
       }
-      /* preview (fill + clipped border) and ref (dashed) share the zoom. */
-      #preview, #ref {
+      /* preview (fill), bord (border) and ref (dashed) share one zoom transform
+         with a margin, so the border can wrap outside the squircle. */
+      #preview, #bord, #ref {
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         transform-origin: top left;
-        transform: scale(var(--zoom));
+        transform: translate(var(--m), var(--m)) scale(var(--zoom));
       }
       #preview { background: var(--accent); }
-      #ref { pointer-events: none; overflow: visible; }
-      /* The border lives INSIDE the clipped preview — exactly like a real
-         Tailwind border-2 (box-sizing: border-box), now hugging the squircle. */
-      #bord {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-      }
-      #bord path { fill: none; }
+      #bord, #ref { pointer-events: none; overflow: visible; }
       #ref path {
         fill: none;
         stroke: rgba(255, 255, 255, 0.55);
@@ -362,7 +354,8 @@
       <section class="right">
         <div class="grid"></div>
         <div class="stage">
-          <div id="preview"><svg id="bord"><path></path></svg></div>
+          <div id="preview"></div>
+          <svg id="bord"><path id="bordStroke"></path><path id="bordFill"></path></svg>
           <svg id="ref"><path></path></svg>
           <div class="legend"><span class="dash"></span> same border without squircle</div>
           <div class="caption" id="caption"></div>
@@ -394,10 +387,12 @@
       const bordW = document.getElementById("bordW");
       const bordVal = document.getElementById("bordVal");
       const bordSvg = document.getElementById("bord");
-      const bordPath = bordSvg.querySelector("path");
+      const bordStroke = document.getElementById("bordStroke");
+      const bordFill = document.getElementById("bordFill");
       const bordCss = document.getElementById("bordCss");
       const step3 = document.getElementById("step3");
       const DEFAULT_BORDER = "#3b82f6";
+      const PREVIEW_FILL = "#fafafa";
       const ZOOM = 3;
 
       // A few Tailwind border colors so border-blue-500 etc. resolve in the demo.
@@ -582,14 +577,18 @@
           bordSvg.style.display = "";
           bordSvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
           bordSvg.setAttribute("preserveAspectRatio", "none");
-          // Stroke the path at 2× width inside the clipped preview — the outer
-          // half is clipped, leaving a crisp border-box border on the squircle.
-          bordPath.setAttribute("d", d);
-          bordPath.setAttribute("stroke", b.color);
-          bordPath.setAttribute("stroke-width", b.w * 2);
+          // Stroke the path at 2× width, then refill the shape on top — the fill
+          // covers the inner half, leaving a crisp border that WRAPS the outside.
+          bordStroke.setAttribute("d", d);
+          bordStroke.setAttribute("fill", "none");
+          bordStroke.setAttribute("stroke", b.color);
+          bordStroke.setAttribute("stroke-width", b.w * 2);
+          bordFill.setAttribute("d", d);
+          bordFill.setAttribute("fill", PREVIEW_FILL);
+          bordFill.setAttribute("stroke", "none");
           step3.style.display = "";
           bordCss.innerHTML = highlight(
-            `/* your existing border-* — now follows the squircle */\nsvg path {\n  fill: none;\n  stroke: ${b.color};\n  stroke-width: ${b.w * 2}; /* 2× → inner half = ${Math.round(b.w)}px */\n}`
+            `/* your existing border-* — now wraps the squircle */\nsvg path {\n  fill: none;\n  stroke: ${b.color};\n  stroke-width: ${b.w * 2}; /* outer half = ${Math.round(b.w)}px border */\n}`
           );
         } else {
           bordSvg.style.display = "none";
