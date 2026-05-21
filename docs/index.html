@@ -34,48 +34,74 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 18px 24px;
+        height: 56px;
+        padding: 0 20px;
         border-bottom: 1px solid var(--border);
       }
       header .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         font-family: var(--mono);
         font-size: 13px;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.02em;
         color: var(--text);
       }
-      header .brand .v { color: var(--faint); }
-      header nav { display: flex; gap: 18px; }
+      header .brand .v {
+        font-size: 11px;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 1px 6px;
+      }
+      header nav { display: flex; align-items: center; gap: 18px; }
       header nav a {
+        display: inline-flex;
+        align-items: center;
+        height: 30px;
         color: var(--muted);
         text-decoration: none;
         font-size: 13px;
+        line-height: 1;
       }
       header nav a:hover { color: var(--text); }
+      .nav-sep {
+        width: 1px;
+        height: 18px;
+        background: var(--border);
+        margin: 0 2px;
+      }
       .copybtn {
+        display: inline-flex;
+        align-items: center;
+        height: 30px;
         font-family: var(--sans);
         font-size: 13px;
         font-weight: 500;
+        line-height: 1;
         color: #09090b;
         background: #fafafa;
-        border: 0;
-        border-radius: 9px;
-        padding: 7px 14px;
+        border: 1px solid #fafafa;
+        border-radius: 8px;
+        padding: 0 14px;
         cursor: pointer;
-        transition: opacity 0.15s, transform 0.1s;
+        white-space: nowrap;
+        transition: opacity 0.15s, transform 0.1s, background 0.15s, border-color 0.15s;
       }
-      .copybtn:hover { opacity: 0.85; }
+      .copybtn:hover { opacity: 0.88; }
       .copybtn:active { transform: scale(0.97); }
-      .copybtn.copied { background: #22c55e; color: #052e16; }
+      .copybtn.copied { background: #22c55e; border-color: #22c55e; color: #052e16; }
       .copybtn.ghost {
         background: transparent;
         color: var(--muted);
         border: 1px solid var(--border);
         font-family: var(--mono);
         font-size: 12px;
-        padding: 6px 12px;
+        padding: 0 12px;
+        font-weight: 400;
       }
       .copybtn.ghost:hover { color: var(--text); border-color: #3f3f46; opacity: 1; }
-      .copybtn.ghost.copied { background: #22c55e; color: #052e16; border-color: #22c55e; }
+      .copybtn.ghost.copied { background: #22c55e; border-color: #22c55e; color: #052e16; }
 
       main {
         display: grid;
@@ -326,9 +352,10 @@
       <nav>
         <a href="https://www.npmjs.com/package/@spatio-labs/squircle" target="_blank" rel="noopener">npm</a>
         <a href="https://github.com/spatio-labs/squircle" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://x.com/mattpark" target="_blank" rel="noopener">by @mattpark</a>
+        <a href="https://x.com/mattpark" target="_blank" rel="noopener">@mattpark</a>
+        <span class="nav-sep"></span>
         <button id="copyInstall" class="copybtn ghost" title="Copy the npm install command">npm i @spatio-labs/squircle</button>
-        <button id="copyPrompt" class="copybtn" title="Copy a prompt for Claude Code / Cursor to add squircle to your project">Copy setup prompt</button>
+        <button id="copyPrompt" class="copybtn" title="Copy a setup prompt for Claude Code / Cursor">Copy setup prompt</button>
       </nav>
     </header>
 
