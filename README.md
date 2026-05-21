@@ -61,7 +61,7 @@ Safari.
 
 ```html
 <div class="rounded-2xl squircle">…</div>               <!-- SwiftUI continuous corner -->
-<div class="rounded-2xl corner-smooth-[0.85]">…</div>   <!-- custom smoothing, 0–1 -->
+<div class="rounded-2xl squircle-[0.85]">…</div>        <!-- custom smoothing, 0–1 -->
 <div class="rounded-2xl corner-superellipse-3">…</div>  <!-- raw CSS superellipse exponent -->
 <div class="rounded-xl corner-scoop">…</div>            <!-- concave -->
 ```
@@ -69,7 +69,7 @@ Safari.
 | Utility | Shape |
 | --- | --- |
 | `squircle` · `corner-squircle` | SwiftUI continuous corner (iOS smoothing) |
-| `corner-smooth-{0,45,ios,60,full,100}` · `corner-smooth-[0.85]` | Continuous corner, custom smoothing `0`–`1` |
+| `squircle-{0,45,ios,60,full,100}` · `squircle-[0.85]` | Continuous corner, custom smoothing `0`–`1` |
 | `corner-round` `corner-bevel` `corner-scoop` `corner-notch` `corner-square` | The CSS [`corner-shape`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/corner-shape-value) keywords |
 | `corner-superellipse-{0..4}` · `corner-superellipse-[3.5]` · `corner-superellipse-[-1]` | Raw superellipse exponent |
 

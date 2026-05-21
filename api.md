@@ -28,7 +28,7 @@ module.exports = {
 | Class | Effect |
 |-------|--------|
 | `squircle`, `corner-squircle` | SwiftUI continuous corner at the configured smoothing. |
-| `corner-smooth-{0,45,ios,60,full,100}` | SwiftUI corner at preset smoothing; arbitrary `corner-smooth-[0.8]` supported. |
+| `squircle-{0,45,ios,60,full,100}` | SwiftUI corner at preset smoothing; arbitrary `squircle-[0.35]` supported. |
 | `corner-round` | `corner-shape: round` (`superellipse(1)`). |
 | `corner-bevel` | `corner-shape: bevel` (`superellipse(0)`). |
 | `corner-scoop` | `corner-shape: scoop` (`superellipse(-1)`, concave). |

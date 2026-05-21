@@ -68,9 +68,10 @@ module.exports = plugin.withOptions(
         ".corner-square": shape("square", 8),
       });
 
-      // Custom SwiftUI smoothing: corner-smooth-60, corner-smooth-[0.8]
+      // Variable-smoothing squircle: squircle-ios, squircle-60, squircle-[0.35].
+      // (`squircle` on its own stays the fixed 0.6 alias above.)
       matchUtilities(
-        { "corner-smooth": (value) => squircle(value) },
+        { squircle: (value) => squircle(value) },
         { values: theme("cornerSmoothing") },
       );
 
@@ -83,7 +84,7 @@ module.exports = plugin.withOptions(
   () => ({
     theme: {
       // SwiftUI smoothing presets (0..1). Tailwind also accepts arbitrary
-      // values, e.g. corner-smooth-[0.45].
+      // values, e.g. squircle-[0.35].
       cornerSmoothing: {
         0: "0",
         45: "0.45",

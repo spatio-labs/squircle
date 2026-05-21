@@ -309,7 +309,7 @@
           <div class="control">
             <div class="row">
               <label>Smoothing</label>
-              <span class="val" id="smVal">0.60 · corner-smooth-[0.6]</span>
+              <span class="val" id="smVal">0.60 · squircle</span>
             </div>
             <input id="sm" type="range" min="0" max="1" step="0.01" value="0.6" />
             <div class="row" style="margin-top:6px">
@@ -377,13 +377,13 @@
       sm.addEventListener("input", () => {
         const v = parseFloat(sm.value);
         const rt = radiusToken(input.value) || "rounded-[64px]";
-        input.value = `${rt} corner-smooth-[${v}]`;
+        input.value = `${rt} squircle-[${v}]`;
         render();
       });
 
       const PRESETS = [
         "rounded-[64px] squircle",
-        "rounded-[64px] corner-smooth-[0.3]",
+        "rounded-[64px] squircle-[0.3]",
         "rounded-[64px] corner-round",
         "rounded-[64px] corner-scoop",
         "rounded-[64px] corner-bevel",
@@ -411,7 +411,7 @@
           if (t === "squircle" || t === "corner-squircle")
             return { model: "smooth", param: 0.6, native: "superellipse(2)", varName: "--se-smooth", varVal: 0.6, token: t };
           let m;
-          if ((m = t.match(/^corner-smooth-(?:\[(-?[\d.]+)\]|([a-z0-9]+))$/))) {
+          if ((m = t.match(/^squircle-(?:\[(-?[\d.]+)\]|([a-z0-9]+))$/))) {
             const v = m[1] != null ? parseFloat(m[1]) : SMOOTH[m[2]];
             if (v != null && !Number.isNaN(v))
               return { model: "smooth", param: v, native: "superellipse(2)", varName: "--se-smooth", varVal: v, token: t };
