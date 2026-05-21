@@ -443,10 +443,14 @@
 
       // Dragging the slider rewrites the class to a variable-smoothing squircle,
       // keeping the radius. (The `squircle` class itself stays a fixed-0.6 alias.)
+      // Replace only the shape token, preserving radius, border-*, everything.
+      const SHAPE_RE = /^(squircle|corner-squircle|squircle-.+|corner-(round|bevel|scoop|notch|square|superellipse-.+))$/;
       sm.addEventListener("input", () => {
         const v = parseFloat(sm.value);
-        const rt = radiusToken(input.value) || "rounded-[64px]";
-        input.value = `${rt} squircle-[${v}]`;
+        const toks = input.value.trim().split(/\s+/).filter((t) => t && !SHAPE_RE.test(t));
+        if (!toks.some((t) => /^rounded(-.+)?$/.test(t))) toks.unshift("rounded-[64px]");
+        toks.push(`squircle-[${v}]`);
+        input.value = toks.join(" ");
         render();
       });
 
