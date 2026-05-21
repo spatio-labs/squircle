@@ -48,7 +48,7 @@ export function App() {
           color: "#52525b",
         }}
       >
-        superellipse
+        squircle
       </span>
 
       <div

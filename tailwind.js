@@ -1,5 +1,5 @@
 /**
- * Superellipse (squircle) corner utilities for Tailwind CSS.
+ * Squircle corner utilities for Tailwind CSS.
  *
  * Built on the native CSS `corner-shape` property (Chromium 139+), which
  * reshapes the corners produced by `border-radius` into a superellipse. That
@@ -9,7 +9,7 @@
  *
  * Usage in tailwind.config.js:
  *
- *   const squircle = require("@spatio-labs/superellipse/tailwind");
+ *   const squircle = require("@spatio-labs/squircle/tailwind");
  *   module.exports = { plugins: [squircle] };
  *
  *   // or make EVERY rounded-* a squircle automatically (no extra class):
@@ -40,7 +40,7 @@ module.exports = plugin.withOptions(
       const smoothing = options.smoothing ?? 0.6;
 
       // The `squircle` utility renders SwiftUI's `.continuous` corner. It sets
-      // `--se-smooth` (read by the `@spatio-labs/superellipse/corners` runtime, which draws
+      // `--se-smooth` (read by the `@spatio-labs/squircle/corners` runtime, which draws
       // the exact Apple curve via clip-path in EVERY browser) and, as a no-JS
       // fallback, the closest native value `corner-shape: superellipse(2)`.
       const squircle = (s) => ({

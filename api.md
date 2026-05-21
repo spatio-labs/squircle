@@ -1,12 +1,12 @@
 # API Reference
 
-`superellipse` is a Tailwind CSS plugin plus a small browser runtime. There is
-no React component (removed in v2).
+`@spatio-labs/squircle` is a Tailwind CSS plugin plus a small browser runtime.
+There is no React component (removed in v2).
 
-## Tailwind plugin — `superellipse` (`@spatio-labs/superellipse/tailwind`)
+## Tailwind plugin — `@spatio-labs/squircle`
 
 ```js
-const squircle = require("@spatio-labs/superellipse");
+const squircle = require("@spatio-labs/squircle");
 
 module.exports = {
   plugins: [
@@ -40,10 +40,10 @@ Each utility sets the relevant CSS (`corner-shape` and/or a `--se-smooth` /
 `--se-shape` custom property) that the runtime reads. The radius itself comes
 from your normal radius utilities (`rounded-*`, `rounded-[20px]`).
 
-## Runtime — `@spatio-labs/superellipse/corners`
+## Runtime — `@spatio-labs/squircle/corners`
 
 ```js
-import { initCorners } from "@spatio-labs/superellipse/corners";
+import { initCorners } from "@spatio-labs/squircle/corners";
 const cleanup = initCorners();
 ```
 

@@ -1,5 +1,5 @@
 /**
- * @spatio-labs/superellipse/corners — cross-browser squircle corners for any browser.
+ * @spatio-labs/squircle/corners — cross-browser squircle corners for any browser.
  *
  * Renders corner shapes by computing a `clip-path: path()` from the element's
  * measured size and `border-radius`, kept in sync with size via ResizeObserver.
@@ -24,7 +24,7 @@
  *    CSS; elsewhere they fall back to the equivalent clip-path.
  *
  * Usage with the Tailwind plugin (sets the custom properties for you):
- *   import { initCorners } from "@spatio-labs/superellipse/corners";
+ *   import { initCorners } from "@spatio-labs/squircle/corners";
  *   initCorners();
  *
  * Or standalone, no Tailwind, via a data attribute that accepts any
@@ -282,7 +282,7 @@ export function initCorners(opts = {}) {
 }
 
 if (typeof window !== "undefined") {
-  window.SuperellipseCorners = {
+  window.SquircleCorners = {
     initCorners,
     squirclePath,
     superellipsePath,

@@ -1,5 +1,5 @@
 {
-  "name": "@spatio-labs/superellipse",
+  "name": "@spatio-labs/squircle",
   "version": "2.0.0",
   "description": "Tailwind CSS plugin + tiny runtime for SwiftUI-accurate squircles and the full CSS corner-shape value set, working in every browser.",
   "main": "./tailwind.js",
@@ -29,7 +29,7 @@
     "corners.d.ts",
     "squircle.css",
     "README.md",
-    "superellipse_example.jpg"
+    "squircle_example.jpg"
   ],
   "sideEffects": [
     "./corners.mjs",
@@ -54,11 +54,11 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/spatio-labs/superellipse.git"
+    "url": "git+https://github.com/spatio-labs/squircle.git"
   },
-  "homepage": "https://github.com/spatio-labs/superellipse#readme",
+  "homepage": "https://github.com/spatio-labs/squircle#readme",
   "bugs": {
-    "url": "https://github.com/spatio-labs/superellipse/issues"
+    "url": "https://github.com/spatio-labs/squircle/issues"
   },
   "publishConfig": {
     "access": "public"

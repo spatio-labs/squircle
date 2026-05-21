@@ -1,20 +1,20 @@
 <div align="center">
 
-# superellipse
+# squircle
 
 **SwiftUI-accurate squircles in every browser — as a Tailwind plugin.**
 
-[![npm](https://img.shields.io/npm/v/@spatio-labs/superellipse?color=000&labelColor=000)](https://www.npmjs.com/package/@spatio-labs/superellipse)
-[![minzip](https://img.shields.io/bundlephobia/minzip/@spatio-labs/superellipse?color=000&labelColor=000)](https://bundlephobia.com/package/@spatio-labs/superellipse)
-[![types](https://img.shields.io/npm/types/@spatio-labs/superellipse?color=000&labelColor=000)](./tailwind.d.ts)
-[![license](https://img.shields.io/npm/l/@spatio-labs/superellipse?color=000&labelColor=000)](./LICENSE)
+[![npm](https://img.shields.io/npm/v/@spatio-labs/squircle?color=000&labelColor=000)](https://www.npmjs.com/package/@spatio-labs/squircle)
+[![minzip](https://img.shields.io/bundlephobia/minzip/@spatio-labs/squircle?color=000&labelColor=000)](https://bundlephobia.com/package/@spatio-labs/squircle)
+[![types](https://img.shields.io/npm/types/@spatio-labs/squircle?color=000&labelColor=000)](./tailwind.d.ts)
+[![license](https://img.shields.io/npm/l/@spatio-labs/squircle?color=000&labelColor=000)](./LICENSE)
 
-![superellipse — with and without corner smoothing](./superellipse_example.jpg)
+![squircle — with and without corner smoothing](./squircle_example.jpg)
 
 </div>
 
 The squircle is the corner that makes Apple's UI feel _settled_ — a continuous
-curve that flows into the edge instead of snapping into an arc. `superellipse`
+curve that flows into the edge instead of snapping into an arc. `squircle`
 brings it to the web as Tailwind utilities, rendering the **real SwiftUI corner**
 (not the rougher CSS `superellipse(2)`) in **every evergreen browser**.
 
@@ -25,7 +25,7 @@ brings it to the web as Tailwind utilities, rendering the **real SwiftUI corner*
 ## Install
 
 ```bash
-npm i @spatio-labs/superellipse
+npm i @spatio-labs/squircle
 ```
 
 `tailwindcss` is an optional peer dependency.
@@ -36,7 +36,7 @@ Register the plugin, then call the runtime once on the client.
 
 ```js
 // tailwind.config.js
-const squircle = require("@spatio-labs/superellipse");
+const squircle = require("@spatio-labs/squircle");
 
 module.exports = {
   plugins: [squircle],
@@ -45,7 +45,7 @@ module.exports = {
 
 ```js
 // app entry
-import { initCorners } from "@spatio-labs/superellipse/corners";
+import { initCorners } from "@spatio-labs/squircle/corners";
 
 initCorners();
 ```
@@ -97,12 +97,12 @@ The runtime stands alone, driven by a `data-corner-shape` attribute that accepts
 ```
 
 ```js
-import { initCorners } from "@spatio-labs/superellipse/corners";
+import { initCorners } from "@spatio-labs/squircle/corners";
 initCorners();
 ```
 
 A plain-CSS file is included for the native `corner-shape` values (Chromium 139+,
-no runtime): `@import "@spatio-labs/superellipse/squircle.css"`.
+no runtime): `@import "@spatio-labs/squircle/squircle.css"`.
 
 ## Why not the native CSS property?
 
@@ -110,7 +110,7 @@ Native [`corner-shape`](https://developer.mozilla.org/en-US/docs/Web/CSS/corner-
 is Chromium-only today, and its `squircle` keyword is `superellipse(2)` — close,
 but tighter than Apple's curve. SwiftUI's `.continuous` corner spreads the bend
 onto the straight edges (the [Figma smoothing model](https://www.figma.com/blog/desperately-seeking-squircles/),
-iOS ≈ 0.6). `superellipse` draws that exact curve, so a single class gives you
+iOS ≈ 0.6). `squircle` draws that exact curve, so a single class gives you
 the genuine iOS look everywhere.
 
 ## API
