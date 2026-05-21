@@ -103,6 +103,51 @@
       .copybtn.ghost:hover { color: var(--text); border-color: #3f3f46; opacity: 1; }
       .copybtn.ghost.copied { background: #22c55e; border-color: #22c55e; color: #052e16; }
 
+      /* package-manager selector */
+      .pm { position: relative; display: inline-flex; align-items: center; }
+      .pm-cmd { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+      .pm-caret {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border-left: 0;
+        padding: 0 9px;
+        font-size: 10px;
+        color: var(--faint);
+      }
+      .pm-menu {
+        position: absolute;
+        top: 38px;
+        right: 0;
+        min-width: 132px;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        padding: 4px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+        z-index: 30;
+      }
+      .pm-menu[hidden] { display: none; }
+      .pm-menu button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--muted);
+        background: transparent;
+        border: 0;
+        text-align: left;
+        padding: 7px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .pm-menu button:hover { background: #1f1f23; color: var(--text); }
+      .pm-menu button.active { color: var(--text); }
+      .pm-menu button.active::after { content: "✓"; color: #22c55e; }
+
       main {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -354,7 +399,16 @@
         <a href="https://github.com/spatio-labs/squircle" target="_blank" rel="noopener">GitHub</a>
         <a href="https://x.com/mattpark" target="_blank" rel="noopener">@mattpark</a>
         <span class="nav-sep"></span>
-        <button id="copyInstall" class="copybtn ghost" title="Copy the npm install command">npm i @spatio-labs/squircle</button>
+        <div class="pm" id="pm">
+          <button id="copyInstall" class="copybtn ghost pm-cmd" title="Copy the install command">npm i @spatio-labs/squircle</button>
+          <button id="pmToggle" class="copybtn ghost pm-caret" aria-label="Choose package manager">▾</button>
+          <div class="pm-menu" id="pmMenu" hidden>
+            <button data-pm="npm">npm</button>
+            <button data-pm="pnpm">pnpm</button>
+            <button data-pm="yarn">yarn</button>
+            <button data-pm="bun">bun</button>
+          </div>
+        </div>
         <button id="copyPrompt" class="copybtn" title="Copy a setup prompt for Claude Code / Cursor">Copy setup prompt</button>
       </nav>
     </header>
@@ -765,8 +819,9 @@
 It renders the real SwiftUI .continuous corner (not CSS superellipse(2)) and works in every browser.
 Docs: https://github.com/spatio-labs/squircle`;
 
-      function wireCopy(btn, text, label) {
+      function wireCopy(btn, getText, label) {
         btn.addEventListener("click", async () => {
+          const text = typeof getText === "function" ? getText() : getText;
           try {
             await navigator.clipboard.writeText(text);
           } catch {
@@ -786,12 +841,44 @@ Docs: https://github.com/spatio-labs/squircle`;
           }, 1600);
         });
       }
+
+      // Package-manager selector for the install command.
+      const PM = {
+        npm: "npm i @spatio-labs/squircle",
+        pnpm: "pnpm add @spatio-labs/squircle",
+        yarn: "yarn add @spatio-labs/squircle",
+        bun: "bun add @spatio-labs/squircle",
+      };
+      let curPm = "npm";
+      const installBtn = document.getElementById("copyInstall");
+      const pmToggle = document.getElementById("pmToggle");
+      const pmMenu = document.getElementById("pmMenu");
+      function setPm(pm) {
+        curPm = pm;
+        installBtn.textContent = PM[pm];
+        pmMenu.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b.dataset.pm === pm));
+      }
+      pmToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        pmMenu.hidden = !pmMenu.hidden;
+      });
+      pmMenu.querySelectorAll("button").forEach((b) =>
+        b.addEventListener("click", (e) => {
+          e.stopPropagation();
+          setPm(b.dataset.pm);
+          pmMenu.hidden = true;
+          installBtn.click(); // copy the newly-selected command
+        })
+      );
+      document.addEventListener("click", () => { pmMenu.hidden = true; });
+      setPm("npm");
+
       wireCopy(document.getElementById("copyPrompt"), SETUP_PROMPT, "Copied ✓");
-      wireCopy(document.getElementById("copyInstall"), "npm i @spatio-labs/squircle", "Copied ✓");
+      wireCopy(installBtn, () => PM[curPm], "Copied ✓");
 
       // Eat our own dog food: shape the playground's own UI with the runtime.
       document
-        .querySelectorAll(".editor, .chip, .step pre, .step .num, .copybtn")
+        .querySelectorAll(".editor, .chip, .step pre, .step .num, #copyPrompt")
         .forEach((el) => el.setAttribute("data-corner-shape", "squircle"));
       initCorners({ force: true });
     </script>
