@@ -221,25 +221,22 @@
         overflow: hidden;
         border: 1px solid var(--border);
         border-radius: 14px;
+        --zoom: 3;
+        --m: 44px; /* margin so the external border has room in the zoom */
       }
-      #preview {
+      /* preview (fill), bord (border) and ref (dashed) share one zoom transform
+         so they stay aligned; the margin leaves room for an external border. */
+      #preview, #bord, #ref {
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: var(--accent);
         transform-origin: top left;
-        transform: scale(var(--zoom, 3));
+        transform: translate(var(--m), var(--m)) scale(var(--zoom));
       }
-      /* Dashed reference of the plain border-radius (circular) corner. */
-      #ref {
-        position: absolute;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-        overflow: visible;
-      }
+      #preview { background: var(--accent); }
+      #bord, #ref { pointer-events: none; overflow: visible; }
       #ref path {
         fill: none;
         stroke: rgba(255, 255, 255, 0.55);
@@ -247,16 +244,6 @@
         stroke-dasharray: 5 5;
         vector-effect: non-scaling-stroke;
       }
-      /* Curve-following border: an SVG stroke inside the clipped preview, so the
-         outer half is clipped and a crisp inset border hugs the squircle. */
-      #bord {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-      }
-      #bord path { fill: none; }
       .control label input[type="checkbox"] {
         accent-color: #0a84ff;
         margin-right: 7px;
@@ -367,7 +354,8 @@
       <section class="right">
         <div class="grid"></div>
         <div class="stage">
-          <div id="preview"><svg id="bord"><path></path></svg></div>
+          <div id="preview"></div>
+          <svg id="bord"><path id="bordStroke"></path><path id="bordFill"></path></svg>
           <svg id="ref"><path></path></svg>
           <div class="legend"><span class="dash"></span> plain border-radius</div>
           <div class="caption" id="caption"></div>
@@ -399,10 +387,12 @@
       const bordW = document.getElementById("bordW");
       const bordVal = document.getElementById("bordVal");
       const bordSvg = document.getElementById("bord");
-      const bordPath = bordSvg.querySelector("path");
+      const bordStroke = document.getElementById("bordStroke");
+      const bordFill = document.getElementById("bordFill");
       const bordCss = document.getElementById("bordCss");
       const step3 = document.getElementById("step3");
       const DEFAULT_BORDER = "#3b82f6";
+      const PREVIEW_FILL = "#fafafa";
       const ZOOM = 3;
 
       // A few Tailwind border colors so border-blue-500 etc. resolve in the demo.
@@ -583,12 +573,18 @@
           bordSvg.style.display = "";
           bordSvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
           bordSvg.setAttribute("preserveAspectRatio", "none");
-          bordPath.setAttribute("d", d);
-          bordPath.setAttribute("stroke", b.color);
-          bordPath.setAttribute("stroke-width", b.w * 2);
+          // Stroke the path at 2× width, then refill the shape on top — the fill
+          // covers the inner half so a crisp EXTERNAL border remains outside.
+          bordStroke.setAttribute("d", d);
+          bordStroke.setAttribute("fill", "none");
+          bordStroke.setAttribute("stroke", b.color);
+          bordStroke.setAttribute("stroke-width", b.w * 2);
+          bordFill.setAttribute("d", d);
+          bordFill.setAttribute("fill", PREVIEW_FILL);
+          bordFill.setAttribute("stroke", "none");
           step3.style.display = "";
           bordCss.innerHTML = highlight(
-            `/* your border-* class — auto-handled */\nsvg path {\n  fill: none;\n  stroke: ${b.color};\n  stroke-width: ${b.w * 2}; /* 2× → inner half = ${Math.round(b.w)}px */\n}`
+            `/* your border-* class — auto-handled, external */\nsvg path {\n  fill: none;\n  stroke: ${b.color};\n  stroke-width: ${b.w * 2}; /* outer half = ${Math.round(b.w)}px border */\n}`
           );
         } else {
           bordSvg.style.display = "none";
@@ -598,8 +594,7 @@
         // Dashed reference: the plain circular (border-radius) corner.
         const refD = r ? superellipsePath(w, h, radii, 1) : "";
         refSvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-        refSvg.setAttribute("width", w * ZOOM);
-        refSvg.setAttribute("height", h * ZOOM);
+        refSvg.setAttribute("preserveAspectRatio", "none");
         refPath.setAttribute("d", refD);
 
         // Thumbnail: the full shape at actual scale (radius scaled to fit).
