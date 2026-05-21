@@ -247,6 +247,21 @@
         stroke-dasharray: 5 5;
         vector-effect: non-scaling-stroke;
       }
+      /* Curve-following border: an SVG stroke inside the clipped preview, so the
+         outer half is clipped and a crisp inset border hugs the squircle. */
+      #bord {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+      #bord path { fill: none; }
+      .control label input[type="checkbox"] {
+        accent-color: #0a84ff;
+        margin-right: 7px;
+        vertical-align: -1px;
+      }
       .thumb-wrap {
         position: absolute;
         bottom: 22px;
@@ -318,6 +333,18 @@
             </div>
           </div>
 
+          <div class="control">
+            <div class="row">
+              <label><input type="checkbox" id="bordOn" checked /> Border — follows the curve</label>
+              <span class="val" id="bordVal">4px</span>
+            </div>
+            <input id="bordW" type="range" min="1" max="12" step="1" value="4" />
+            <div class="row" style="margin-top:6px">
+              <span class="hint">a plain CSS border gets clipped at the corners</span>
+              <span class="hint">this strokes the squircle path</span>
+            </div>
+          </div>
+
           <div class="chips" id="chips"></div>
         </div>
 
@@ -330,13 +357,17 @@
             <div class="head"><span class="num">2</span> The runtime computes this <code>clip-path</code></div>
             <pre id="clip"></pre>
           </div>
+          <div class="step" id="step3">
+            <div class="head"><span class="num">3</span> The border strokes that <em>same</em> path</div>
+            <pre id="bordCss"></pre>
+          </div>
         </div>
       </section>
 
       <section class="right">
         <div class="grid"></div>
         <div class="stage">
-          <div id="preview"></div>
+          <div id="preview"><svg id="bord"><path></path></svg></div>
           <svg id="ref"><path></path></svg>
           <div class="legend"><span class="dash"></span> plain border-radius</div>
           <div class="caption" id="caption"></div>
@@ -364,6 +395,14 @@
       const thumb = document.getElementById("thumb");
       const sm = document.getElementById("sm");
       const smVal = document.getElementById("smVal");
+      const bordOn = document.getElementById("bordOn");
+      const bordW = document.getElementById("bordW");
+      const bordVal = document.getElementById("bordVal");
+      const bordSvg = document.getElementById("bord");
+      const bordPath = bordSvg.querySelector("path");
+      const bordCss = document.getElementById("bordCss");
+      const step3 = document.getElementById("step3");
+      const BORDER_COLOR = "#0a84ff";
       const ZOOM = 3;
 
       const radiusToken = (cls) => {
@@ -496,6 +535,26 @@
         preview.style.webkitClipPath = preview.style.clipPath;
         preview.style.borderRadius = "0";
 
+        // Border that follows the curve: stroke the same path, inside the
+        // clipped preview, so only the inner half shows (a real inset border).
+        const bw = parseInt(bordW.value, 10);
+        bordVal.textContent = `${bw}px`;
+        if (bordOn.checked && d) {
+          bordSvg.style.display = "";
+          bordSvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+          bordSvg.setAttribute("preserveAspectRatio", "none");
+          bordPath.setAttribute("d", d);
+          bordPath.setAttribute("stroke", BORDER_COLOR);
+          bordPath.setAttribute("stroke-width", bw * 2);
+          step3.style.display = "";
+          bordCss.innerHTML = highlight(
+            `/* a CSS border would be clipped here */\nsvg path {\n  fill: none;\n  stroke: ${BORDER_COLOR};\n  stroke-width: ${bw * 2}; /* 2× → inner half = ${bw}px */\n}`
+          );
+        } else {
+          bordSvg.style.display = "none";
+          step3.style.display = "none";
+        }
+
         // Dashed reference: the plain circular (border-radius) corner.
         const refD = r ? superellipsePath(w, h, radii, 1) : "";
         refSvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
@@ -527,6 +586,8 @@
         caption.textContent = `zoomed ${ZOOM}× · ${w}×${h}px, radius ${Math.round(r)}px`;
       }
 
+      bordOn.addEventListener("change", render);
+      bordW.addEventListener("input", render);
       input.addEventListener("input", render);
       new ResizeObserver(render).observe(preview);
       render();

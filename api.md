@@ -64,6 +64,10 @@ Without Tailwind, target elements with a `data-corner-shape` attribute that
 accepts `squircle` / `continuous` (SwiftUI) or any
 [`<corner-shape-value>`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/corner-shape-value).
 
+**Borders.** If a shaped element has a CSS `border`, the runtime strokes the
+same path (clipped to the shape) so the border follows the curve instead of
+being shaved off at the corners. Just use a normal border — no extra API.
+
 ### Path helpers
 
 - `squirclePath(w, h, radii, smoothing)` — SwiftUI continuous-corner outline

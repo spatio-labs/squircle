@@ -1,6 +1,6 @@
 {
   "name": "@spatio-labs/squircle",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Tailwind CSS plugin + tiny runtime for SwiftUI-accurate squircles and the full CSS corner-shape value set, working in every browser.",
   "main": "./tailwind.js",
   "types": "./tailwind.d.ts",

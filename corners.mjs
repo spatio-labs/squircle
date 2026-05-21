@@ -199,6 +199,43 @@ function readRadii(el) {
   };
 }
 
+const SVGNS = "http://www.w3.org/2000/svg";
+
+// A border on a clip-path'd squircle gets shaved at the corners. Instead we
+// stroke the *same* path: an SVG overlay inside the clipped element, so the
+// outer half of the stroke is clipped away and a crisp border hugs the curve.
+// This is the part most squircle implementations miss.
+function ensureBorder(el, cs, w, h, d) {
+  const bw = parseFloat(cs.borderTopWidth) || 0;
+  const bc = cs.borderTopColor;
+  const transparent = !bc || bc === "transparent" || /^rgba?\(0,\s*0,\s*0,\s*0\)$/.test(bc);
+  let ov = el.querySelector(":scope > svg[data-squircle-border]");
+
+  if (d && bw > 0 && !transparent) {
+    if (getComputedStyle(el).position === "static") el.style.position = "relative";
+    if (!ov) {
+      ov = document.createElementNS(SVGNS, "svg");
+      ov.setAttribute("data-squircle-border", "");
+      ov.setAttribute("preserveAspectRatio", "none");
+      ov.setAttribute("aria-hidden", "true");
+      Object.assign(ov.style, {
+        position: "absolute", inset: "0", width: "100%", height: "100%", pointerEvents: "none",
+      });
+      ov.appendChild(document.createElementNS(SVGNS, "path"));
+      el.appendChild(ov);
+    }
+    ov.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    const p = ov.firstChild;
+    p.setAttribute("d", d);
+    p.setAttribute("fill", "none");
+    p.setAttribute("stroke", bc);
+    p.setAttribute("stroke-width", bw * 2); // outer half is clipped → bw shows
+    el.style.borderColor = "transparent"; // hide the real (clipped) border
+  } else if (ov) {
+    ov.remove();
+  }
+}
+
 function applyOne(el, force) {
   const cs = getComputedStyle(el);
   const w = el.offsetWidth;
@@ -230,6 +267,7 @@ function applyOne(el, force) {
   const value = `path('${d}')`;
   el.style.clipPath = value;
   el.style.webkitClipPath = value;
+  ensureBorder(el, cs, w, h, d);
 }
 
 /**

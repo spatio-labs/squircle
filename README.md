@@ -76,6 +76,18 @@ Safari.
 The radius comes from your normal Tailwind radius utilities (`rounded-md`,
 `rounded-[20px]`); the `corner-*` class only changes the corner _shape_.
 
+### Borders that follow the curve
+
+This is the part most squircle implementations miss. A normal CSS `border` on a
+clip-path'd squircle gets **shaved off at the corners** — so others either drop
+borders or fall back to a round `border-radius`. The runtime instead strokes the
+*same path*, clipped to the shape, giving a crisp border that hugs the squircle.
+Just add a normal Tailwind border — it's handled automatically:
+
+```html
+<div class="rounded-2xl squircle border-2 border-blue-500">Border follows the corner.</div>
+```
+
 ### Make everything a squircle
 
 ```js
