@@ -235,7 +235,6 @@
         transform-origin: top left;
         transform: translate(var(--m), var(--m)) scale(var(--zoom));
       }
-      #preview { background: var(--accent); }
       #bord, #ref { pointer-events: none; overflow: visible; }
       #ref path {
         fill: none;
@@ -304,7 +303,7 @@
         <div>
           <div class="field-label">Tailwind class — edit me</div>
           <div class="editor">
-            <span class="prompt">class=</span>
+            <span class="prompt">className=</span>
             <input id="cls" spellcheck="false" value="rounded-[64px] border-[6px] border-blue-500 squircle" />
           </div>
 
@@ -322,7 +321,7 @@
 
           <div class="control">
             <div class="row">
-              <label><input type="checkbox" id="bordOn" checked /> Border <span style="text-transform:none;letter-spacing:0">(just add <code>border-*</code> — handled)</span></label>
+              <label><input type="checkbox" id="bordOn" checked /> Border <span style="text-transform:none;letter-spacing:0">(any <code>border-*</code> — width, colour, <code>/opacity</code>)</span></label>
               <span class="val" id="bordVal">6px</span>
             </div>
             <input id="bordW" type="range" min="1" max="12" step="1" value="6" />
@@ -535,7 +534,11 @@
       }
 
       function render() {
-        preview.className = input.value; // real classes (Tailwind styles them too)
+        // Clear inline overrides so the class's own background / border-color
+        // compute, then apply the real classes (Tailwind styles everything).
+        preview.style.background = "";
+        preview.style.borderColor = "";
+        preview.className = input.value;
         preview.style.setProperty("--zoom", ZOOM);
 
         const w = preview.offsetWidth;
@@ -573,27 +576,43 @@
         if (b.has) bordW.value = Math.round(b.w);
         bordVal.textContent = b.has ? `${Math.round(b.w)}px` : "off";
 
+        // Border shape is set synchronously (deterministic); the colour + fill
+        // are read from real Tailwind below so opacity / arbitrary colours work.
         if (b.has && d) {
           bordSvg.style.display = "";
           bordSvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
           bordSvg.setAttribute("preserveAspectRatio", "none");
-          // Stroke the path at 2× width, then refill the shape on top — the fill
-          // covers the inner half, leaving a crisp border that WRAPS the outside.
           bordStroke.setAttribute("d", d);
           bordStroke.setAttribute("fill", "none");
-          bordStroke.setAttribute("stroke", b.color);
           bordStroke.setAttribute("stroke-width", b.w * 2);
           bordFill.setAttribute("d", d);
-          bordFill.setAttribute("fill", PREVIEW_FILL);
           bordFill.setAttribute("stroke", "none");
           step3.style.display = "";
-          bordCss.innerHTML = highlight(
-            `/* your existing border-* — now wraps the squircle */\nsvg path {\n  fill: none;\n  stroke: ${b.color};\n  stroke-width: ${b.w * 2}; /* outer half = ${Math.round(b.w)}px border */\n}`
-          );
         } else {
           bordSvg.style.display = "none";
           step3.style.display = "none";
         }
+
+        // Pull background + border colour from the *computed* Tailwind styles, so
+        // any class works: bg-*, border-blue-500/50, border-[#hex], etc. Runs
+        // after the Play-CDN JIT has applied the classes.
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            const cs = getComputedStyle(preview);
+            let fill = cs.backgroundColor;
+            if (!fill || fill === "rgba(0, 0, 0, 0)" || fill === "transparent") fill = PREVIEW_FILL;
+            preview.style.background = fill; // the clipped shape shows the fill
+            if (b.has && d) {
+              const col = cs.borderTopColor || b.color;
+              bordStroke.setAttribute("stroke", col);
+              bordFill.setAttribute("fill", fill);
+              preview.style.borderColor = "transparent"; // hide the shaved CSS border
+              bordCss.innerHTML = highlight(
+                `/* your border-* — colour + opacity, wrapping the squircle */\nsvg path {\n  fill: none;\n  stroke: ${col};\n  stroke-width: ${b.w * 2};\n}`
+              );
+            }
+          })
+        );
 
         // Dashed reference: the plain circular (border-radius) corner.
         const refD = r ? superellipsePath(w, h, radii, 1) : "";
