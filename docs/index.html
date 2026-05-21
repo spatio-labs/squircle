@@ -318,7 +318,7 @@
           <div class="field-label">Tailwind class — edit me</div>
           <div class="editor">
             <span class="prompt">class=</span>
-            <input id="cls" spellcheck="false" value="rounded-[64px] squircle" />
+            <input id="cls" spellcheck="false" value="rounded-[64px] border-[6px] border-blue-500 squircle" />
           </div>
 
           <div class="control">
@@ -335,13 +335,13 @@
 
           <div class="control">
             <div class="row">
-              <label><input type="checkbox" id="bordOn" checked /> Border — follows the curve</label>
-              <span class="val" id="bordVal">4px</span>
+              <label><input type="checkbox" id="bordOn" checked /> Border <span style="text-transform:none;letter-spacing:0">(just add <code>border-*</code> — handled)</span></label>
+              <span class="val" id="bordVal">6px</span>
             </div>
-            <input id="bordW" type="range" min="1" max="12" step="1" value="4" />
+            <input id="bordW" type="range" min="1" max="12" step="1" value="6" />
             <div class="row" style="margin-top:6px">
-              <span class="hint">a plain CSS border gets clipped at the corners</span>
-              <span class="hint">this strokes the squircle path</span>
+              <span class="hint">a plain CSS border gets shaved at the corners</span>
+              <span class="hint">squircle strokes the path instead</span>
             </div>
           </div>
 
@@ -402,8 +402,43 @@
       const bordPath = bordSvg.querySelector("path");
       const bordCss = document.getElementById("bordCss");
       const step3 = document.getElementById("step3");
-      const BORDER_COLOR = "#0a84ff";
+      const DEFAULT_BORDER = "#3b82f6";
       const ZOOM = 3;
+
+      // A few Tailwind border colors so border-blue-500 etc. resolve in the demo.
+      const TW_COLORS = {
+        "blue-500": "#3b82f6", "blue-600": "#2563eb", "sky-500": "#0ea5e9",
+        "indigo-500": "#6366f1", "violet-500": "#8b5cf6", "red-500": "#ef4444",
+        "rose-500": "#f43f5e", "green-500": "#22c55e", "emerald-500": "#10b981",
+        "amber-500": "#f59e0b", "white": "#ffffff", "black": "#000000",
+        "zinc-900": "#18181b", "zinc-400": "#a1a1aa",
+      };
+
+      // Parse Tailwind border-* classes — so `border-2 border-blue-500` on the
+      // element is picked up automatically, exactly like the runtime does.
+      function parseBorder(cls) {
+        let w = 0, has = false, color = null;
+        for (const t of cls.trim().split(/\s+/)) {
+          if (t === "border") { w = 1; has = true; continue; }
+          let m;
+          if ((m = t.match(/^border-(\d+(?:\.\d+)?)$/))) { w = parseFloat(m[1]); has = true; continue; }
+          if ((m = t.match(/^border-\[([^\]]+)\]$/))) {
+            const v = m[1];
+            if (/^[\d.]+(px|rem)?$/.test(v)) { w = v.endsWith("rem") ? parseFloat(v) * 16 : parseFloat(v); has = true; }
+            else color = v;
+            continue;
+          }
+          if ((m = t.match(/^border-([a-z]+(?:-\d{2,3})?)$/)) && TW_COLORS[m[1]]) color = TW_COLORS[m[1]];
+        }
+        return { has: has && w > 0, w, color: color || DEFAULT_BORDER };
+      }
+
+      // Insert/replace border-* tokens when the border controls are used.
+      function setBorderInClass(width, on) {
+        const toks = input.value.trim().split(/\s+/).filter((t) => !/^border(-.*)?$/.test(t));
+        if (on) toks.push(`border-[${width}px]`, "border-blue-500");
+        input.value = toks.join(" ");
+      }
 
       const radiusToken = (cls) => {
         let rt = null;
@@ -535,20 +570,25 @@
         preview.style.webkitClipPath = preview.style.clipPath;
         preview.style.borderRadius = "0";
 
-        // Border that follows the curve: stroke the same path, inside the
-        // clipped preview, so only the inner half shows (a real inset border).
-        const bw = parseInt(bordW.value, 10);
-        bordVal.textContent = `${bw}px`;
-        if (bordOn.checked && d) {
+        // Border that follows the curve — driven by the border-* class itself,
+        // stroking the same path inside the clipped preview so only the inner
+        // half shows (a real inset border). Add `border-2` and it just works.
+        const b = parseBorder(input.value);
+        // Keep the controls in sync with the class.
+        bordOn.checked = b.has;
+        if (b.has) bordW.value = Math.round(b.w);
+        bordVal.textContent = b.has ? `${Math.round(b.w)}px` : "off";
+
+        if (b.has && d) {
           bordSvg.style.display = "";
           bordSvg.setAttribute("viewBox", `0 0 ${w} ${h}`);
           bordSvg.setAttribute("preserveAspectRatio", "none");
           bordPath.setAttribute("d", d);
-          bordPath.setAttribute("stroke", BORDER_COLOR);
-          bordPath.setAttribute("stroke-width", bw * 2);
+          bordPath.setAttribute("stroke", b.color);
+          bordPath.setAttribute("stroke-width", b.w * 2);
           step3.style.display = "";
           bordCss.innerHTML = highlight(
-            `/* a CSS border would be clipped here */\nsvg path {\n  fill: none;\n  stroke: ${BORDER_COLOR};\n  stroke-width: ${bw * 2}; /* 2× → inner half = ${bw}px */\n}`
+            `/* your border-* class — auto-handled */\nsvg path {\n  fill: none;\n  stroke: ${b.color};\n  stroke-width: ${b.w * 2}; /* 2× → inner half = ${Math.round(b.w)}px */\n}`
           );
         } else {
           bordSvg.style.display = "none";
@@ -586,8 +626,14 @@
         caption.textContent = `zoomed ${ZOOM}× · ${w}×${h}px, radius ${Math.round(r)}px`;
       }
 
-      bordOn.addEventListener("change", render);
-      bordW.addEventListener("input", render);
+      bordOn.addEventListener("change", () => {
+        setBorderInClass(parseInt(bordW.value, 10), bordOn.checked);
+        render();
+      });
+      bordW.addEventListener("input", () => {
+        if (bordOn.checked) setBorderInClass(parseInt(bordW.value, 10), true);
+        render();
+      });
       input.addEventListener("input", render);
       new ResizeObserver(render).observe(preview);
       render();
