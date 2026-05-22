@@ -78,7 +78,7 @@ The radius comes from your normal Tailwind radius utilities (`rounded-md`,
 
 ### Borders that follow the curve
 
-![A plain CSS border thins to nothing at the corner, while squircle keeps it even all the way around](./squircle_borders.png)
+![A squircle card with a sky-blue border, and a magnified corner showing the border keeps an even width around the continuous curve](./squircle_borders.png)
 
 This is the part most squircle implementations miss. A normal CSS `border` on a
 clip-path'd squircle gets **shaved off at the corners** — so others either drop
