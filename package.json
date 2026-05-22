@@ -29,7 +29,8 @@
     "corners.d.ts",
     "squircle.css",
     "README.md",
-    "squircle_example.jpg"
+    "squircle_hero.png",
+    "squircle_borders.png"
   ],
   "sideEffects": [
     "./corners.mjs",

@@ -11,7 +11,7 @@
 [![types](https://img.shields.io/npm/types/@spatio-labs/squircle?color=000&labelColor=000)](./tailwind.d.ts)
 [![license](https://img.shields.io/npm/l/@spatio-labs/squircle?color=000&labelColor=000)](./LICENSE)
 
-![squircle — with and without corner smoothing](./squircle_example.jpg)
+![squircle — a plain border-radius arc beside a SwiftUI continuous corner](./squircle_hero.png)
 
 </div>
 
@@ -77,6 +77,8 @@ The radius comes from your normal Tailwind radius utilities (`rounded-md`,
 `rounded-[20px]`); the `corner-*` class only changes the corner _shape_.
 
 ### Borders that follow the curve
+
+![A plain CSS border thins to nothing at the corner, while squircle keeps it even all the way around](./squircle_borders.png)
 
 This is the part most squircle implementations miss. A normal CSS `border` on a
 clip-path'd squircle gets **shaved off at the corners** — so others either drop
